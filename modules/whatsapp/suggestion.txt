@@ -1,0 +1,100 @@
+wa_controller
+
+const service = require("./whatsapp_service");
+
+exports.check_valid = async (req, res) => {
+ let dt = { req: req };
+ dt = await service.capture_payload_check_valid(dt);
+ dt = await service.validasi_payload_check_valid(dt);
+ dt = await service.hit_api_woowa_check_number(dt);
+ 
+ // Remove circular references before sending response
+ const { req: _, ...responseDt } = dt;
+ res.status(dt.code).json(responseDt);
+};
+
+exports.send_wa = async (req, res) => {
+  let dt = { req: req };
+  // dt = await service.validasi_payload(dt);
+  // dt = await service.send_wa(dt);
+  
+  // Remove circular references before sending response
+  const { req: _, ...responseDt } = dt;
+  res.status(dt.code).json(responseDt);
+}
+
+
+wa_service
+
+const helper = require("../../common/helper");
+const axios = require("axios");
+
+exports.capture_payload_check_valid = async (dt) => {
+  dt.code = 200;
+  dt.status = 'success';
+  dt.message = 'success';
+  dt.no_wa = dt.req.params.no_wa || '';
+  return dt;
+}
+
+exports.validasi_payload_check_valid = async (dt) => {
+
+  if(dt.no_wa=='') {
+    dt.code=400;
+    dt.status='failed';
+    dt.message='no_wa is required';
+  }
+
+  if(dt.status !== 'failed' && !/^\d+$/.test(dt.no_wa))  {
+    dt.message = 'no_wa must be numeric';
+    dt.status = 'failed';
+    dt.code = 400;
+  }
+  return dt;
+}
+
+exports.hit_api_woowa_check_number = async (dt) => {
+  // hit api woowa cek number
+  try {
+    const baseUrl = "https://notifapi.com";
+    const apiKey = "f538a366609b3a97ce751087dbc08e961b2ce1dcfe7ac4fb"
+
+    const payload = {
+      phone_no: dt.no_wa,
+      key: apiKey,
+    };
+
+    const response = await axios.post (
+      `${baseUrl}/check_number`,
+      payload,
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+
+    // console.log('Sukses:', response.data);
+    if (response.data.code == 200) {
+      // Success - number is registered on WhatsApp
+      dt.message = 'valid';
+    } else {
+      // Error - number not registered or other error
+      dt.message = 'invalid';
+      dt.status = 'failed';
+      dt.code = 400;
+    }
+
+  } catch (error) {
+    dt.message = 'invalid';
+    dt.status = 'failed';
+    console.error('Gagal:', error.response?.data || error.message);
+    // throw error;
+  }
+
+  dt.data = dt.no_wa;
+  return dt;
+}
+
+
+
+
+
+
+
