@@ -290,6 +290,18 @@ exports.checkout_create_order = async (dt) => {
 
     await dt.con.query(`UPDATE \`order\` SET invoice = ? WHERE id = ?`, [invoice, result.insertId]);
 
+    // Track coupon usage
+    if (kuponId) {
+      await dt.con.query(
+        `UPDATE kupon SET used_count = COALESCE(used_count, 0) + 1 WHERE id = ?`,
+        [kuponId]
+      );
+      await dt.con.query(
+        `INSERT INTO kupon_usage (kupon_id, order_id, used_at) VALUES (?, ?, NOW())`,
+        [kuponId, result.insertId]
+      );
+    }
+
     // Set response data with invoice
     dt.data = {
       order_id: result.insertId,
