@@ -118,7 +118,7 @@ exports.checkout_validate_kupon = async (dt) => {
 
   try {
     const [rows] = await helper.db.query(
-      `SELECT potongan, min_beli, max_beli FROM coupons WHERE kode = ?`,
+      `SELECT id, kode, potongan, min_order, tipe, status FROM kupon WHERE kode = ?`,
       [dt.payload.kupon.trim().toUpperCase()]
     );
 
@@ -129,17 +129,22 @@ exports.checkout_validate_kupon = async (dt) => {
 
     const coupon = rows[0];
 
-    if (subtotal < coupon.min_beli) {
+    if (coupon.status !== 'aktif') {
       dt.payload.diskon = 0;
       return dt;
     }
 
-    if (subtotal > coupon.max_beli) {
+    if (subtotal < coupon.min_order) {
       dt.payload.diskon = 0;
       return dt;
     }
 
-    dt.payload.diskon = parseInt(coupon.potongan);
+    let potongan = parseInt(coupon.potongan);
+    if (coupon.tipe === 'percentage') {
+      potongan = Math.round(subtotal * potongan / 100);
+    }
+    dt.payload.diskon = potongan;
+    dt.payload.kupon_id = coupon.id;
   } catch (e) {
     console.log(e.stack);
     dt.payload.diskon = 0;
@@ -162,7 +167,7 @@ exports.checkout_get_harga = async (dt) => {
     where = `id = ?`;
   }
   
-  const [rows] = await helper.db.query(`SELECT id, harga FROM products WHERE ${where}`, [productId]);
+  const [rows] = await helper.db.query(`SELECT id, nama, harga FROM products WHERE ${where}`, [productId]);
   console.log('checkout_get_harga', rows);
   if (rows.length == 0) {
    dt.message = 'product not found';
@@ -171,6 +176,7 @@ exports.checkout_get_harga = async (dt) => {
    return dt;
   }
   dt.payload.harga = rows[0].harga;
+  dt.payload.product_name = rows[0].nama;
   dt.payload.product_id = rows[0].id;
 
   return dt;
@@ -218,14 +224,9 @@ exports.checkout_create_account = async (dt) => {
         const rawPassword = generateRandomPassword(8);
         const hashedPassword = WordPressHash.HashPassword(rawPassword);
         
-        // Extract card data (last 4 digits only for security)
-        const cardName = dt.payload.cardName || '';
-        const cardLast4 = dt.payload.cardNumber ? dt.payload.cardNumber.slice(-4) : '';
-        const cardExpiry = dt.payload.cardExpiry || '';
-        
         const [rows2] = await helper.db.query(
-          `INSERT INTO account (nama, email, no_wa, password, card_name, card_last4, card_expiry) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [dt.payload.nama, dt.payload.email, dt.payload.no_wa, hashedPassword, cardName, cardLast4, cardExpiry]
+          `INSERT INTO account (nama, email, no_wa, password) VALUES (?, ?, ?, ?)`,
+          [dt.payload.nama, dt.payload.email, dt.payload.no_wa, hashedPassword]
         );
         dt.payload.pelanggan_id = rows2.insertId;
         
@@ -233,22 +234,9 @@ exports.checkout_create_account = async (dt) => {
         dt.payload.generated_password = rawPassword;
         dt.payload.generated_email = dt.payload.email;
         dt.payload.generated_name = dt.payload.nama;
-        } else {
-         // User exists - update card data if provided and not empty
+    } else {
         dt.payload.pelanggan_id = rows[0].id;
-         
-         const cardName = dt.payload.cardName || '';
-         const cardLast4 = dt.payload.cardNumber ? dt.payload.cardNumber.slice(-4) : '';
-        const cardExpiry = dt.payload.cardExpiry || '';
-          
-          // Only update if there's new card data
-          if (cardName && cardLast4 && cardExpiry) {
-          await helper.db.query(
-            `UPDATE account SET card_name = ?, card_last4 = ?, card_expiry = ? WHERE id = ?`,
-            [cardName, cardLast4, cardExpiry, dt.payload.pelanggan_id]
-          );
-        }
-      }
+    }
       dt.code=200;
       dt.status='success';
       dt.message='success';
@@ -269,10 +257,17 @@ exports.checkout_create_order = async (dt) => {
   }
   try {
     let diskon = parseInt(dt.payload.diskon) || 0;
-    let total = (parseInt(dt.payload.harga) * parseInt(dt.payload.qty)) - diskon;
+    let subtotal = parseInt(dt.payload.harga) * parseInt(dt.payload.qty);
+    let total = subtotal - diskon;
     if (total < 0) total = 0;
+    dt.payload.subtotal = subtotal;
     dt.payload.total = total;
-    const [result] = await dt.con.query(`INSERT INTO \`order\` (account_id, products_id, harga, qty, total) VALUES (?, ?, ?, ?, ?)`, [dt.payload.pelanggan_id, dt.payload.product_id, dt.payload.harga, dt.payload.qty, dt.payload.total]);
+    const kuponId = dt.payload.kupon_id || null;
+    const bankId = dt.payload.bank_id || null;
+    const [result] = await dt.con.query(
+      `INSERT INTO \`order\` (account_id, products_id, harga, qty, subtotal, kupon_id, diskon_jumlah, total, bank_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [dt.payload.pelanggan_id, dt.payload.product_id, dt.payload.harga, dt.payload.qty, subtotal, kuponId, diskon, total, bankId]
+    );
     dt.payload.order_id = result.insertId;
     dt.code = 200;
     dt.message = "success";
@@ -292,9 +287,14 @@ exports.checkout_create_order_item = async (dt) => {
     return dt;
   }
   try {
+    const diskon_order_item = parseInt(dt.payload.diskon) || 0;
+    const subtotal_order_item = parseInt(dt.payload.harga) * parseInt(dt.payload.qty);
+    const total_order_item = subtotal_order_item - diskon_order_item;
+    const kuponIdOrderItem = dt.payload.kupon_id || null;
+    const bankIdOrderItem = dt.payload.bank_id || null;
     const [result] = await dt.con.query(
-      `INSERT INTO order_item (order_id, products_id, harga, qty, total) VALUES (?, ?, ?, ?, ?)`,
-      [dt.payload.order_id, dt.payload.product_id, dt.payload.harga, dt.payload.qty, dt.payload.total]
+      `INSERT INTO order_item (order_id, products_id, harga, qty, subtotal, kupon_id, diskon_jumlah, total, bank_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [dt.payload.order_id, dt.payload.product_id, dt.payload.harga, dt.payload.qty, subtotal_order_item, kuponIdOrderItem, diskon_order_item, total_order_item, bankIdOrderItem]
     );
     dt.payload.order_item_id = result.insertId;
     dt.code = 200;
@@ -336,20 +336,49 @@ exports.checkout_send_wa = async (dt) => {
   if (dt.status == 'failed') {
     return dt;
   }
+
+  // Read bank info from database
+  try {
+    const [bankRows] = await helper.db.query(
+      `SELECT id, jenis_bank, no_rek, atas_nama FROM bank WHERE status = 'aktif' LIMIT 1`
+    );
+    if (bankRows.length > 0) {
+      dt.payload.bank_name = bankRows[0].jenis_bank;
+      dt.payload.bank_account = bankRows[0].no_rek;
+      dt.payload.bank_owner = bankRows[0].atas_nama;
+      dt.payload.bank_id = bankRows[0].id;
+    }
+  } catch (e) {
+    console.log('Failed to read bank info:', e.message);
+    dt.payload.bank_name = 'BCA';
+    dt.payload.bank_account = '123456789';
+    dt.payload.bank_owner = 'PT. Star Frost';
+  }
   
-  let message = `Halo ${dt.payload.nama || 'Customer'}, terima kasih telah melakukan pembelian. Berikut adalah detail pembelian Anda:
+  const diskon = parseInt(dt.payload.diskon) || 0;
+  const total = parseInt(dt.payload.total) || (parseInt(dt.payload.harga) * parseInt(dt.payload.qty));
+
+  const deadline = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const deadlineStr = deadline.toLocaleDateString('id-ID', {
+    day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+  dt.payload.payment_deadline = deadlineStr;
+
+  let message = `Halo ${dt.payload.nama || 'Customer'}, terima kasih telah memesan produk ${dt.payload.product_name}. Berikut adalah detail pesanan Anda:
   
   Produk: ${dt.payload.product_name}
-  Harga: ${dt.payload.harga}
-  Qty: ${dt.payload.qty}
-  Total: ${dt.payload.harga * dt.payload.qty}
+  Harga: Rp${parseInt(dt.payload.harga).toLocaleString('id-ID')}
+  Jumlah: ${dt.payload.qty}${diskon > 0 ? `
+  Diskon: -Rp${diskon.toLocaleString('id-ID')}` : ''}
+  Total: Rp${total.toLocaleString('id-ID')}
   
   Anda bisa melakukan pembayaran ke nomor rekening berikut:
-  Bank: BCA
-  No Rekening: 123456789
-  Atas Nama: PT. Star Frost
+  Bank: ${dt.payload.bank_name}
+  No Rekening: ${dt.payload.bank_account}
+  Atas Nama: ${dt.payload.bank_owner}
+  Batas Pembayaran: ${deadlineStr}
   
-  Apabila Anda sudah melakukan pembayar, silakan kirim bukti pembayaran ke nomor WhatsApp ini: ${process.env.WA_NUMBER}`;
+  Apabila Anda sudah melakukan pembayaran, silakan kirim bukti pembayaran ke nomor WhatsApp ini: ${process.env.WA_NUMBER}`;
   
   // Add login credentials if this is a new guest account
   if (dt.payload.generated_password && dt.payload.generated_email) {

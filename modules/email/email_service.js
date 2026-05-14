@@ -31,38 +31,45 @@ exports.sendCheckoutEmail = async (dt) => {
     return dt;
   }
 
-  const { email, nama, product_name, harga, qty, generated_password } = dt.payload;
+  const { email, nama, product_name, harga, qty, diskon, total, payment_deadline, generated_password } = dt.payload;
   
-  const total = parseInt(harga) * parseInt(qty);
+  const subtotal = parseInt(harga) * parseInt(qty);
+  const diskonValue = parseInt(diskon) || 0;
+  const totalValue = parseInt(total) || subtotal;
   
-  const subject = 'Terima kasih telah melakukan pembelian - Telegram Booster';
+  const subject = 'Terima kasih telah memesan - Telegram Booster';
   
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #28a745;">Terima kasih telah melakukan pembelian!</h2>
+      <h2 style="color: #28a745;">Pesanan Anda Sudah Kami Terima</h2>
+      <p>Terima kasih Anda telah memesan ${product_name}, berikut detail pesanan Anda:</p>
       
       <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
         <h3 style="margin-top: 0;">Detail Pesanan</h3>
         <p><strong>Produk:</strong> ${product_name}</p>
         <p><strong>Harga:</strong> Rp${parseInt(harga).toLocaleString('id-ID')}</p>
         <p><strong>Jumlah:</strong> ${qty}</p>
-        <p><strong>Total:</strong> Rp${total.toLocaleString('id-ID')}</p>
+        ${diskonValue > 0 ? `<p><strong>Diskon:</strong> -Rp${diskonValue.toLocaleString('id-ID')}</p>` : ''}
+        <p><strong>Total:</strong> Rp${totalValue.toLocaleString('id-ID')}</p>
       </div>
+      
+      <p>Silhkan lakukan pembayaran ke rekening berikut:</p>
       
       <div style="background: #e9ecef; padding: 20px; border-radius: 8px; margin: 20px 0;">
         <h3 style="margin-top: 0;">Informasi Pembayaran</h3>
-        <p><strong>Bank:</strong> BCA</p>
-        <p><strong>No Rekening:</strong> 123456789</p>
-        <p><strong> Atas Nama:</strong> PT. Star Frost</p>
+        <p><strong>Bank:</strong> ${dt.payload.bank_name || 'BCA'}</p>
+        <p><strong>No Rekening:</strong> ${dt.payload.bank_account || '123456789'}</p>
+        <p><strong>Atas Nama:</strong> ${dt.payload.bank_owner || 'PT. Star Frost'}</p>
+        <p><strong>Batas Pembayaran:</strong> ${payment_deadline || '-'}</p>
         <p style="color: #dc3545;">Setelah melakukan pembayaran, silakan kirim bukti pembayaran ke WhatsApp: ${process.env.WA_NUMBER}</p>
       </div>
       
       ${generated_password ? `
       <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #ffc107;">
-        <h3 style="margin-top: 0; color: #856404;">Akun Login Anda</h3>
+        <h3 style="margin-top: 0; color: #856404;">Akun Anda</h3>
         <p><strong>Email:</strong> ${email}</p>
         <p><strong>Password:</strong> ${generated_password}</p>
-        <p style="font-size: 12px; color: #856404;">Catat credentials di atas untuk login di website. Anda bisa ubah password kapan saja di halaman Account.</p>
+        <p style="font-size: 12px; color: #856404;">Harap simpan credentials akun Anda. Anda bisa login di <a href="https://telegrambooster.id/login"> sini</a>.</p>
       </div>
       ` : ''}
       

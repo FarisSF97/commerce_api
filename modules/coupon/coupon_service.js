@@ -3,7 +3,7 @@ const helper = require("../../common/helper");
 exports.validate_coupon = async (kode, subtotal) => {
   try {
     const [rows] = await helper.db.query(
-      `SELECT kode, potongan, min_beli, max_beli FROM coupons WHERE kode = ?`,
+      `SELECT kode, potongan, min_order, tipe, status FROM kupon WHERE kode = ?`,
       [kode]
     );
 
@@ -18,22 +18,27 @@ exports.validate_coupon = async (kode, subtotal) => {
 
     const coupon = rows[0];
 
-    if (subtotal < coupon.min_beli) {
+    if (coupon.status !== 'aktif') {
       return {
         code: 400,
         status: 'failed',
-        message: `Minimal pembelian Rp${parseInt(coupon.min_beli).toLocaleString('id-ID')} untuk menggunakan kupon ini`,
+        message: 'Kupon sudah tidak aktif',
         data: null
       };
     }
 
-    if (subtotal > coupon.max_beli) {
+    if (subtotal < coupon.min_order) {
       return {
         code: 400,
         status: 'failed',
-        message: `Kupon hanya berlaku untuk maksimal pembelian Rp${parseInt(coupon.max_beli).toLocaleString('id-ID')}`,
+        message: `Minimal pembelian Rp${parseInt(coupon.min_order).toLocaleString('id-ID')} untuk menggunakan kupon ini`,
         data: null
       };
+    }
+
+    let potongan = parseInt(coupon.potongan);
+    if (coupon.tipe === 'percentage') {
+      potongan = Math.round(subtotal * potongan / 100);
     }
 
     return {
@@ -42,7 +47,7 @@ exports.validate_coupon = async (kode, subtotal) => {
       message: 'Kupon valid',
       data: {
         kode: coupon.kode,
-        potongan: parseInt(coupon.potongan)
+        potongan: potongan
       }
     };
   } catch (e) {
