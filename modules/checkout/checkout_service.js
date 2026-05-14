@@ -394,8 +394,10 @@ exports.checkout_send_wa = async (dt) => {
     dt.payload.bank_owner = 'PT. Star Frost';
   }
   
+  const qty = parseInt(dt.payload.qty);
   const diskon = parseInt(dt.payload.diskon) || 0;
-  const total = parseInt(dt.payload.total) || (parseInt(dt.payload.harga) * parseInt(dt.payload.qty));
+  const subtotal = parseInt(dt.payload.harga) * qty;
+  const total = parseInt(dt.payload.total) || subtotal;
 
   const deadline = new Date(Date.now() + 24 * 60 * 60 * 1000);
   const deadlineStr = deadline.toLocaleDateString('id-ID', {
@@ -407,7 +409,8 @@ exports.checkout_send_wa = async (dt) => {
   
   Produk: ${dt.payload.product_name}
   Harga: Rp${parseInt(dt.payload.harga).toLocaleString('id-ID')}
-  Jumlah: ${dt.payload.qty}${diskon > 0 ? `
+  Jumlah: ${qty}${qty > 1 ? `
+  Subtotal: Rp${subtotal.toLocaleString('id-ID')}` : ''}${diskon > 0 ? `
   Diskon: -Rp${diskon.toLocaleString('id-ID')}` : ''}
   Total: Rp${total.toLocaleString('id-ID')}
   

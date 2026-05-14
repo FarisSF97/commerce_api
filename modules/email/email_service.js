@@ -49,6 +49,7 @@ exports.sendCheckoutEmail = async (dt) => {
         <p><strong>Produk:</strong> ${product_name}</p>
         <p><strong>Harga:</strong> Rp${parseInt(harga).toLocaleString('id-ID')}</p>
         <p><strong>Jumlah:</strong> ${qty}</p>
+        ${parseInt(qty) > 1 ? `<p><strong>Subtotal:</strong> Rp${subtotal.toLocaleString('id-ID')}</p>` : ''}
         ${diskonValue > 0 ? `<p><strong>Diskon:</strong> -Rp${diskonValue.toLocaleString('id-ID')}</p>` : ''}
         <p><strong>Total:</strong> Rp${totalValue.toLocaleString('id-ID')}</p>
       </div>
