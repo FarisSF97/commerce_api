@@ -167,7 +167,7 @@ exports.checkout_get_harga = async (dt) => {
     where = `id = ?`;
   }
   
-  const [rows] = await helper.db.query(`SELECT id, nama, harga FROM products WHERE ${where}`, [productId]);
+  const [rows] = await helper.db.query(`SELECT id, nama, slug, harga, periode FROM products WHERE ${where}`, [productId]);
   console.log('checkout_get_harga', rows);
   if (rows.length == 0) {
    dt.message = 'product not found';
@@ -177,6 +177,8 @@ exports.checkout_get_harga = async (dt) => {
   }
   dt.payload.harga = rows[0].harga;
   dt.payload.product_name = rows[0].nama;
+  dt.payload.product_slug = rows[0].slug;
+  dt.payload.periode = rows[0].periode;
   dt.payload.product_id = rows[0].id;
 
   return dt;
@@ -264,11 +266,36 @@ exports.checkout_create_order = async (dt) => {
     dt.payload.total = total;
     const kuponId = dt.payload.kupon_id || null;
     const bankId = dt.payload.bank_id || null;
+
     const [result] = await dt.con.query(
       `INSERT INTO \`order\` (account_id, products_id, harga, qty, subtotal, kupon_id, diskon_jumlah, total, bank_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [dt.payload.pelanggan_id, dt.payload.product_id, dt.payload.harga, dt.payload.qty, subtotal, kuponId, diskon, total, bankId]
     );
     dt.payload.order_id = result.insertId;
+
+    // Generate invoice number using order_id (guaranteed unique)
+    const slug = dt.payload.product_slug || '';
+    const pcMatch = slug.match(/-(\d+)pc$/);
+    const pcCount = pcMatch ? parseInt(pcMatch[1]) : 1;
+    const periode = parseInt(dt.payload.periode) || 1;
+    const productCode = `${pcCount}${periode === 100 ? '9' : '0'}0`;
+
+    const now = new Date();
+    const dateStr = now.getFullYear().toString() +
+      (now.getMonth() + 1).toString().padStart(2, '0') +
+      now.getDate().toString().padStart(2, '0');
+
+    const invoice = `INV-${dateStr}-${productCode}-${result.insertId}`;
+    dt.payload.invoice = invoice;
+
+    await dt.con.query(`UPDATE \`order\` SET invoice = ? WHERE id = ?`, [invoice, result.insertId]);
+
+    // Set response data with invoice
+    dt.data = {
+      order_id: result.insertId,
+      invoice: invoice
+    };
+
     dt.code = 200;
     dt.message = "success";
     dt.status = "success";
