@@ -5,6 +5,7 @@ exports.checkout = async (req, res) => {
   dt = await service.checkout_validasi(dt);
   dt = await service.checkout_get_harga(dt);
   dt = await service.checkout_validate_kupon(dt);
+  dt = await service.checkout_get_bank_info(dt);
   dt = await service.checkout_create_account(dt);
   dt = await service.checkout_begin_transaction(dt);
   dt = await service.checkout_create_order(dt);

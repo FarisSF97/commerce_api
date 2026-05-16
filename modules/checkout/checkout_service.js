@@ -153,6 +153,33 @@ exports.checkout_validate_kupon = async (dt) => {
   return dt;
 }
 
+exports.checkout_get_bank_info = async (dt) => {
+  if (dt.status == 'failed') {
+    return dt;
+  }
+
+  // Skip bank info for card payments
+  if (dt.payload.payment_method === 'card') {
+    return dt;
+  }
+
+  try {
+    const [bankRows] = await helper.db.query(
+      `SELECT id, jenis_bank, no_rek, atas_nama FROM bank WHERE status = 'aktif' LIMIT 1`
+    );
+    if (bankRows.length > 0) {
+      dt.payload.bank_name = bankRows[0].jenis_bank;
+      dt.payload.bank_account = bankRows[0].no_rek;
+      dt.payload.bank_owner = bankRows[0].atas_nama;
+      dt.payload.bank_id = bankRows[0].id;
+    }
+  } catch (e) {
+    console.log('Failed to read bank info:', e.message);
+  }
+
+  return dt;
+}
+
 exports.checkout_get_harga = async (dt) => {
   if (dt.status == 'failed') {
    return dt;
@@ -305,8 +332,19 @@ exports.checkout_create_order = async (dt) => {
     // Set response data with invoice
     dt.data = {
       order_id: result.insertId,
-      invoice: invoice
+      invoice: invoice,
+      harga: dt.payload.harga,
+      product_name: dt.payload.product_name,
+      qty: dt.payload.qty,
+      diskon: diskon,
+      total: total,
+      subtotal: subtotal
     };
+
+    if (dt.payload.generated_password) {
+      dt.data.generated_password = dt.payload.generated_password;
+      dt.data.generated_email = dt.payload.generated_email;
+    }
 
     dt.code = 200;
     dt.message = "success";
@@ -376,23 +414,17 @@ exports.checkout_send_wa = async (dt) => {
     return dt;
   }
 
-  // Read bank info from database
-  try {
-    const [bankRows] = await helper.db.query(
-      `SELECT id, jenis_bank, no_rek, atas_nama FROM bank WHERE status = 'aktif' LIMIT 1`
-    );
-    if (bankRows.length > 0) {
-      dt.payload.bank_name = bankRows[0].jenis_bank;
-      dt.payload.bank_account = bankRows[0].no_rek;
-      dt.payload.bank_owner = bankRows[0].atas_nama;
-      dt.payload.bank_id = bankRows[0].id;
-    }
-  } catch (e) {
-    console.log('Failed to read bank info:', e.message);
+  // Use bank info already read by checkout_get_bank_info
+  if (!dt.payload.bank_id) {
     dt.payload.bank_name = 'BCA';
     dt.payload.bank_account = '123456789';
     dt.payload.bank_owner = 'PT. Star Frost';
   }
+  // Forward bank info to response data
+  dt.data.bank_name = dt.payload.bank_name;
+  dt.data.bank_account = dt.payload.bank_account;
+  dt.data.bank_owner = dt.payload.bank_owner;
+  dt.data.bank_id = dt.payload.bank_id;
   
   const qty = parseInt(dt.payload.qty);
   const diskon = parseInt(dt.payload.diskon) || 0;
