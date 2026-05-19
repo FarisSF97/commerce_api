@@ -118,7 +118,7 @@ exports.checkout_validate_kupon = async (dt) => {
 
   try {
     const [rows] = await helper.db.query(
-      `SELECT id, kode, potongan, min_order, tipe, status FROM kupon WHERE kode = ?`,
+      `SELECT id, kode, potongan, min_order, tipe, status, valid_from, valid_until FROM kupon WHERE kode = ? AND (valid_from IS NULL OR valid_from <= NOW()) AND (valid_until IS NULL OR valid_until >= NOW())`,
       [dt.payload.kupon.trim().toUpperCase()]
     );
 
@@ -130,6 +130,18 @@ exports.checkout_validate_kupon = async (dt) => {
     const coupon = rows[0];
 
     if (coupon.status !== 'aktif') {
+      dt.payload.diskon = 0;
+      return dt;
+    }
+
+    const now = new Date();
+
+    if (coupon.valid_from && new Date(coupon.valid_from) > now) {
+      dt.payload.diskon = 0;
+      return dt;
+    }
+
+    if (coupon.valid_until && new Date(coupon.valid_until) < now) {
       dt.payload.diskon = 0;
       return dt;
     }
@@ -194,8 +206,7 @@ exports.checkout_get_harga = async (dt) => {
     where = `id = ?`;
   }
   
-  const [rows] = await helper.db.query(`SELECT id, nama, slug, harga, periode FROM products WHERE ${where}`, [productId]);
-  console.log('checkout_get_harga', rows);
+  const [rows] = await helper.db.query(`SELECT id, nama, slug, harga, kode_unik, periode FROM products WHERE ${where}`, [productId]);
   if (rows.length == 0) {
    dt.message = 'product not found';
    dt.status = 'failed';
@@ -205,6 +216,7 @@ exports.checkout_get_harga = async (dt) => {
   dt.payload.harga = rows[0].harga;
   dt.payload.product_name = rows[0].nama;
   dt.payload.product_slug = rows[0].slug;
+  dt.payload.kode_unik = rows[0].kode_unik || 0;
   dt.payload.periode = rows[0].periode;
   dt.payload.product_id = rows[0].id;
 
@@ -286,11 +298,13 @@ exports.checkout_create_order = async (dt) => {
   }
   try {
     let diskon = parseInt(dt.payload.diskon) || 0;
+    let kodeUnik = parseInt(dt.payload.kode_unik) || 0;
     let subtotal = parseInt(dt.payload.harga) * parseInt(dt.payload.qty);
-    let total = subtotal - diskon;
+    let total = subtotal - diskon - kodeUnik;
     if (total < 0) total = 0;
     dt.payload.subtotal = subtotal;
     dt.payload.total = total;
+    dt.payload.kode_unik = kodeUnik;
     const kuponId = dt.payload.kupon_id || null;
     const bankId = dt.payload.bank_id || null;
 
@@ -336,6 +350,7 @@ exports.checkout_create_order = async (dt) => {
       harga: dt.payload.harga,
       product_name: dt.payload.product_name,
       qty: dt.payload.qty,
+      kode_unik: kodeUnik,
       diskon: diskon,
       total: total,
       subtotal: subtotal
@@ -428,6 +443,7 @@ exports.checkout_send_wa = async (dt) => {
   
   const qty = parseInt(dt.payload.qty);
   const diskon = parseInt(dt.payload.diskon) || 0;
+  const kodeUnik = parseInt(dt.payload.kode_unik) || 0;
   const subtotal = parseInt(dt.payload.harga) * qty;
   const total = parseInt(dt.payload.total) || subtotal;
 
@@ -441,9 +457,10 @@ exports.checkout_send_wa = async (dt) => {
   
   Produk: ${dt.payload.product_name}
   Harga: Rp${parseInt(dt.payload.harga).toLocaleString('id-ID')}
-  Jumlah: ${qty}${qty > 1 ? `
-  Subtotal: Rp${subtotal.toLocaleString('id-ID')}` : ''}${diskon > 0 ? `
+  Jumlah: ${qty}
+  Subtotal: Rp${subtotal.toLocaleString('id-ID')}${diskon > 0 ? `
   Diskon: -Rp${diskon.toLocaleString('id-ID')}` : ''}
+  Kode Unik: -Rp${kodeUnik.toLocaleString('id-ID')}
   *Total: Rp${total.toLocaleString('id-ID')}*
   
   Anda bisa melakukan pembayaran ke nomor rekening berikut:

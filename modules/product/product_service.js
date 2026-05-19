@@ -28,7 +28,7 @@ exports.get_all_products = async (req, res) => {
   let rows = [];
 
   try {
-    const query = `SELECT nama, harga, slug FROM products ORDER BY nama`;
+    const query = `SELECT nama, harga, kode_unik, slug FROM products ORDER BY nama`;
     [rows] = await helper.db.query(query);
   } catch (err) {
     console.log(err.stack);
@@ -65,29 +65,35 @@ exports.get_product = async (req, res) => {
 
   try {
     const query = `SELECT * FROM products WHERE ${where}`;
-    console.log(query);
     rows = await helper.db.query(query,slug);
-    console.log(rows);
   } catch (err) {
     console.log(err.stack);
   }
 
-  let msg = "Product not found";
-  let status = "failed";
-  let code = 404;
-  if (rows[0].length > 0) {
-    msg = "Product found";
-    status = "success";
-    code = 200;
+  if (rows[0] && rows[0].length > 0) {
+    const product = rows[0][0];
+    return {
+      code: 200,
+      status: "success",
+      message: "Product found",
+      data: [{
+        id: product.id,
+        nama: product.nama,
+        harga: product.harga,
+        kode_unik: product.kode_unik || null,
+        slug: product.slug,
+        periode: product.periode || null,
+        deskripsi: product.deskripsi || null
+      }]
+    };
   }
 
-  let dt = {
-    code: code,
-    status: status,
-    message: msg,
-    data: rows[0]
+  return {
+    code: 404,
+    status: "failed",
+    message: "Product not found",
+    data: []
   };
-  return dt;
 }
 
 exports.get_product_checkout = async (req, res) => {
@@ -126,6 +132,7 @@ exports.get_product_checkout = async (req, res) => {
         id: product.id,
         nama: product.nama,
         harga: product.harga,
+        kode_unik: product.kode_unik || null,
         slug: product.slug,
         periode: product.periode || null,
         deskripsi: product.deskripsi || null

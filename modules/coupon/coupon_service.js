@@ -3,7 +3,7 @@ const helper = require("../../common/helper");
 exports.validate_coupon = async (kode, subtotal) => {
   try {
     const [rows] = await helper.db.query(
-      `SELECT kode, potongan, min_order, tipe, status FROM kupon WHERE kode = ?`,
+      `SELECT kode, potongan, min_order, tipe, status, valid_from, valid_until FROM kupon WHERE kode = ?`,
       [kode]
     );
 
@@ -23,6 +23,26 @@ exports.validate_coupon = async (kode, subtotal) => {
         code: 400,
         status: 'failed',
         message: 'Kupon sudah tidak aktif',
+        data: null
+      };
+    }
+
+    const now = new Date();
+
+    if (coupon.valid_from && new Date(coupon.valid_from) > now) {
+      return {
+        code: 400,
+        status: 'failed',
+        message: 'Kupon belum berlaku',
+        data: null
+      };
+    }
+
+    if (coupon.valid_until && new Date(coupon.valid_until) < now) {
+      return {
+        code: 400,
+        status: 'failed',
+        message: 'Kupon sudah kedaluwarsa',
         data: null
       };
     }

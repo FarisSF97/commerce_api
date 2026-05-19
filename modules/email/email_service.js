@@ -31,10 +31,11 @@ exports.sendCheckoutEmail = async (dt) => {
     return dt;
   }
 
-  const { email, nama, product_name, harga, qty, diskon, total, payment_deadline, generated_password } = dt.payload;
+  const { email, nama, product_name, harga, qty, diskon, kode_unik, total, payment_deadline, generated_password } = dt.payload;
   
   const subtotal = parseInt(harga) * parseInt(qty);
   const diskonValue = parseInt(diskon) || 0;
+  const kodeUnikValue = parseInt(kode_unik) || 0;
   const totalValue = parseInt(total) || subtotal;
   
   const subject = 'Terima kasih telah memesan - Telegram Booster';
@@ -49,8 +50,9 @@ exports.sendCheckoutEmail = async (dt) => {
         <p><strong>Produk:</strong> ${product_name}</p>
         <p><strong>Harga:</strong> Rp${parseInt(harga).toLocaleString('id-ID')}</p>
         <p><strong>Jumlah:</strong> ${qty}</p>
-        ${parseInt(qty) > 1 ? `<p><strong>Subtotal:</strong> Rp${subtotal.toLocaleString('id-ID')}</p>` : ''}
+        <p><strong>Subtotal:</strong> Rp${subtotal.toLocaleString('id-ID')}</p>
         ${diskonValue > 0 ? `<p><strong>Diskon:</strong> -Rp${diskonValue.toLocaleString('id-ID')}</p>` : ''}
+        <p><strong>Kode Unik:</strong> -Rp${kodeUnikValue.toLocaleString('id-ID')}</p>
         <p><strong>Total:</strong> Rp${totalValue.toLocaleString('id-ID')}</p>
       </div>
       
@@ -70,7 +72,7 @@ exports.sendCheckoutEmail = async (dt) => {
         <h3 style="margin-top: 0; color: #856404;">Akun Anda</h3>
         <p><strong>Email:</strong> ${email}</p>
         <p><strong>Password:</strong> ${generated_password}</p>
-        <p style="font-size: 12px; color: #856404;">Harap simpan credentials akun Anda. Anda bisa login di <a href="https://telegrambooster.id/login"> sini</a>.</p>
+        <p style="font-size: 12px; color: #856404;">Harap simpan credentials akun Anda. Anda bisa login di <a href="https://sf97.my.id/login"> sini</a>.</p>
       </div>
       ` : ''}
       
