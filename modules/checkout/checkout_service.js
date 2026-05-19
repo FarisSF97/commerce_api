@@ -444,7 +444,7 @@ exports.checkout_send_wa = async (dt) => {
   Jumlah: ${qty}${qty > 1 ? `
   Subtotal: Rp${subtotal.toLocaleString('id-ID')}` : ''}${diskon > 0 ? `
   Diskon: -Rp${diskon.toLocaleString('id-ID')}` : ''}
-  Total: Rp${total.toLocaleString('id-ID')}
+  *Total: Rp${total.toLocaleString('id-ID')}*
   
   Anda bisa melakukan pembayaran ke nomor rekening berikut:
   Bank: ${dt.payload.bank_name}
