@@ -24,6 +24,7 @@ router.post("/validate_coupon", coupon.validate_coupon);
 router.post("/login", account.login);
 router.post("/register", account.register);
 router.get("/me", account.getCurrentUser);
+router.get("/activate/:token", account.activate);
 router.post("/change_password", account.changePassword);
 
 module.exports = router;

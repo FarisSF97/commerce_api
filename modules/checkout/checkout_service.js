@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const helper = require("../../common/helper");
 
 // Helper function to generate random password
@@ -271,6 +272,11 @@ exports.checkout_create_account = async (dt) => {
         );
         dt.payload.pelanggan_id = rows2.insertId;
         
+        // Generate activation token
+        const activationToken = crypto.randomBytes(32).toString('hex');
+        await helper.db.query(`UPDATE account SET activation_token = ? WHERE id = ?`, [activationToken, rows2.insertId]);
+        dt.payload.activation_token = activationToken;
+        
         // Store raw password for WhatsApp message (temporary, will be sent)
         dt.payload.generated_password = rawPassword;
         dt.payload.generated_email = dt.payload.email;
@@ -475,7 +481,11 @@ exports.checkout_send_wa = async (dt) => {
   if (dt.payload.generated_password && dt.payload.generated_email) {
     message += `
   
-  📋 AKUN LOGIN ANDA (untuk login di website):
+  🔓 AKUN ANDA BELUM AKTIF
+  Klik link berikut untuk mengaktifkan akun Anda:
+  http://localhost:3000/activate/${dt.payload.activation_token}
+  
+  📋 AKUN LOGIN ANDA (setelah aktivasi):
   Email: ${dt.payload.generated_email}
   Password: ${dt.payload.generated_password}
   

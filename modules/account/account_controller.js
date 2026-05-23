@@ -1,6 +1,8 @@
+const crypto = require('crypto');
 const express = require('express');
 const wpHash = require('wordpress-hash-node');
 const helper = require('../../common/helper');
+const emailService = require('../email/email_service');
 
 const { response } = helper;
 
@@ -37,6 +39,26 @@ const account = {
       
       if (!isValidPassword) {
         return response.unauthorized(res, 'Invalid email or password');
+      }
+      
+      if (user.status === 'suspend') {
+        const activationLink = `http://localhost:3000/activate/${user.activation_token}`;
+        const subject = 'Aktivasi Akun - Telegram Booster';
+        const html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #dc3545;">Akun Anda Belum Aktif</h2>
+            <p>Halo <strong>${user.nama || email}</strong>,</p>
+            <p>Akun Anda dengan email <strong>${email}</strong> masih dalam status <strong>suspend</strong> dan belum bisa digunakan.</p>
+            <p>Klik tombol di bawah untuk mengaktifkan akun Anda:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${activationLink}" style="display: inline-block; background: #28a745; color: white; padding: 14px 40px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Aktifkan Akun</a>
+            </div>
+            <p style="color: #6c757d; font-size: 14px;">Atau salin link berikut ke browser:<br>${activationLink}</p>
+            <p style="color: #6c757d; margin-top: 30px;">Hormat kami,<br><strong>Tim Telegram Booster</strong></p>
+          </div>
+        `;
+        await emailService.sendEmail(email, subject, html);
+        return response.error(res, 'Akun Anda belum diaktifkan. Silakan cek email/WhatsApp untuk link aktivasi.', 403);
       }
       
       const userData = {
@@ -89,11 +111,15 @@ const account = {
         [name, email, hashedPassword, whatsapp]
       );
       
+      const activationToken = crypto.randomBytes(32).toString('hex');
+      await helper.db.execute('UPDATE account SET activation_token = ? WHERE id = ?', [activationToken, result.insertId]);
+      
       const userData = {
         id: result.insertId,
         name: name,
         email: email,
-        whatsapp: whatsapp
+        whatsapp: whatsapp,
+        activation_token: activationToken
       };
       
       return response.created(res, userData, 'Registration successful');
@@ -106,6 +132,30 @@ const account = {
 
   getCurrentUser: async (req, res) => {
     return response.error(res, 'Session validation not implemented', 501);
+  },
+
+  activate: async (req, res) => {
+    const { token } = req.params;
+
+    if (!token) {
+      return response.error(res, 'Token diperlukan', 400);
+    }
+
+    try {
+      const [result] = await helper.db.execute(
+        'UPDATE account SET status = ?, activation_token = NULL WHERE activation_token = ?',
+        ['aktif', token]
+      );
+
+      if (result.affectedRows === 0) {
+        return response.error(res, 'Token tidak valid atau sudah digunakan', 404);
+      }
+
+      return response.success(res, null, 'Akun berhasil diaktifkan');
+    } catch (error) {
+      console.error('Activate error:', error);
+      return response.serverError(res, 'Gagal mengaktifkan akun');
+    }
   },
 
   changePassword: async (req, res) => {
