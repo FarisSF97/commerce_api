@@ -5,6 +5,7 @@ const whatsapp = require('../modules/whatsapp/whatsapp_controller');
 const checkout = require('../modules/checkout/checkout_controller');
 const account = require('../modules/account/account_controller');
 const coupon = require('../modules/coupon/coupon_controller');
+const order = require('../modules/order/order_controller');
 
 // Product routes
 router.get("/get_all_products", product.get_all_products);
@@ -19,6 +20,10 @@ router.post("/checkout", checkout.checkout);
 
 // Coupon
 router.post("/validate_coupon", coupon.validate_coupon);
+
+// Order
+router.get("/get_orders/:account_id", order.getOrders);
+router.post("/cancel_order/:order_id", order.cancelOrder);
 
 // Authentication endpoints
 router.post("/login", account.login);

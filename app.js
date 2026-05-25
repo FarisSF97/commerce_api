@@ -7,7 +7,13 @@ const { worker10s } = require('./common/worker');
 worker10s();
 
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+  const origin = req.headers.origin;
+  const allowedOrigins = ["http://localhost:3000", "http://localhost:4500"];
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  } else {
+    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+  }
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers","Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie");
   res.header("Access-Control-Allow-Credentials", "true");
