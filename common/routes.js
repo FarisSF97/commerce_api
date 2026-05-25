@@ -31,5 +31,7 @@ router.post("/register", account.register);
 router.get("/me", account.getCurrentUser);
 router.get("/activate/:token", account.activate);
 router.post("/change_password", account.changePassword);
+router.post("/forgot_password", account.forgotPassword);
+router.post("/reset_password", account.resetPassword);
 
 module.exports = router;

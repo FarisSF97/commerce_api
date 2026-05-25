@@ -179,6 +179,88 @@ const account = {
       console.error('Change password error:', error);
       return response.serverError(res, 'Gagal ubah password');
     }
+  },
+
+  forgotPassword: async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+      return response.error(res, 'Email diperlukan', 400);
+    }
+
+    try {
+      const [users] = await helper.db.execute(
+        'SELECT id FROM account WHERE email = ? LIMIT 1',
+        [email]
+      );
+
+      if (users.length > 0) {
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const expiry = new Date(Date.now() + 60 * 60 * 1000);
+
+        await helper.db.execute(
+          'UPDATE account SET reset_token = ?, reset_token_expiry = ? WHERE id = ?',
+          [resetToken, expiry, users[0].id]
+        );
+
+        const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
+        const subject = 'Reset Password - Telegram Booster';
+        const html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #007bff;">Reset Password</h2>
+            <p>Halo,</p>
+            <p>Kami menerima permintaan reset password untuk akun Anda dengan email <strong>${email}</strong>.</p>
+            <p>Klik tombol di bawah untuk membuat password baru:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetLink}" style="display: inline-block; background: #007bff; color: white; padding: 14px 40px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Reset Password</a>
+            </div>
+            <p style="color: #6c757d; font-size: 14px;">Link ini berlaku selama 1 jam. Abaikan email ini jika Anda tidak meminta reset password.</p>
+            <p style="color: #6c757d; margin-top: 30px;">Hormat kami,<br><strong>Tim Telegram Booster</strong></p>
+          </div>
+        `;
+        await emailService.sendEmail(email, subject, html);
+      }
+
+      return response.success(res, null, 'Jika email terdaftar, link reset password telah dikirim.');
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      return response.serverError(res, 'Gagal memproses reset password');
+    }
+  },
+
+  resetPassword: async (req, res) => {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return response.error(res, 'Token dan password diperlukan', 400);
+    }
+
+    if (password.length < 4) {
+      return response.error(res, 'Password minimal 4 karakter', 400);
+    }
+
+    try {
+      const [users] = await helper.db.execute(
+        'SELECT id FROM account WHERE reset_token = ? AND reset_token_expiry >= NOW() LIMIT 1',
+        [token]
+      );
+
+      if (users.length === 0) {
+        return response.error(res, 'Token tidak valid atau sudah kedaluwarsa', 400);
+      }
+
+      const hashedPassword = wpHash.HashPassword(password);
+
+      await helper.db.execute(
+        'UPDATE account SET password = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?',
+        [hashedPassword, users[0].id]
+      );
+
+      return response.success(res, null, 'Password berhasil direset. Silakan login.');
+    } catch (error) {
+      console.error('Reset password error:', error);
+      return response.serverError(res, 'Gagal mereset password');
+    }
   }
 };
 
