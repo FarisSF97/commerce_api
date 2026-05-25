@@ -58,7 +58,7 @@ const account = {
           </div>
         `;
         await emailService.sendEmail(email, subject, html);
-        return response.error(res, 'Akun Anda belum diaktifkan. Silakan cek email/WhatsApp untuk link aktivasi.', 403);
+        return response.error(res, 'Akun Anda belum diaktifkan. Silakan cek email untuk link aktivasi.', 403);
       }
       
       const userData = {
