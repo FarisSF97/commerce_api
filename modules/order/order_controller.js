@@ -7,13 +7,14 @@ const order = {
     const { account_id } = req.params;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const search = (req.query.search || '').trim();
 
     if (!account_id) {
       return response.error(res, 'account_id diperlukan', 400);
     }
 
     try {
-      const result = await service.getOrders(account_id, page, limit);
+      const result = await service.getOrders(account_id, page, limit, search);
       return response.success(res, result, 'Orders retrieved successfully');
     } catch (error) {
       console.error('Get orders error:', error);
