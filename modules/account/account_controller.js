@@ -261,6 +261,64 @@ const account = {
       console.error('Reset password error:', error);
       return response.serverError(res, 'Gagal mereset password');
     }
+  },
+
+  updateProfile: async (req, res) => {
+    const { account_id, nama, email, no_wa } = req.body;
+
+    if (!account_id) {
+      return response.error(res, 'account_id diperlukan', 400);
+    }
+
+    try {
+      const [users] = await helper.db.execute(
+        'SELECT * FROM account WHERE id = ? LIMIT 1',
+        [account_id]
+      );
+
+      if (users.length === 0) {
+        return response.error(res, 'Akun tidak ditemukan', 404);
+      }
+
+      const user = users[0];
+      const newNama = nama || user.nama;
+      const newEmail = email || user.email;
+      const newNoWa = no_wa || user.no_wa;
+
+      const activationToken = crypto.randomBytes(32).toString('hex');
+
+      await helper.db.execute(
+        'UPDATE account SET nama = ?, email = ?, no_wa = ?, status = ?, activation_token = ? WHERE id = ?',
+        [newNama, newEmail, newNoWa, 'suspend', activationToken, account_id]
+      );
+
+      const activationLink = `http://localhost:3000/activate/${activationToken}`;
+      const subject = 'Aktivasi Ulang Akun - Telegram Booster';
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #dc3545;">Data Akun Diperbarui</h2>
+          <p>Halo <strong>${newNama}</strong>,</p>
+          <p>Data akun Anda telah diperbarui:</p>
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>Nama:</strong> ${newNama}</p>
+            <p><strong>Email:</strong> ${newEmail}</p>
+            <p><strong>WhatsApp:</strong> ${newNoWa || '-'}</p>
+          </div>
+          <p>Akun Anda saat ini <strong>dinonaktifkan</strong> untuk alasan keamanan. Klik tombol di bawah untuk mengaktifkan kembali:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${activationLink}" style="display: inline-block; background: #28a745; color: white; padding: 14px 40px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Aktifkan Akun</a>
+          </div>
+          <p style="color: #6c757d; font-size: 14px;">Atau salin link berikut ke browser:<br>${activationLink}</p>
+          <p style="color: #6c757d; margin-top: 30px;">Hormat kami,<br><strong>Tim Telegram Booster</strong></p>
+        </div>
+      `;
+      await emailService.sendEmail(newEmail, subject, html);
+
+      return response.success(res, null, 'Data akun berhasil diperbarui. Silakan cek email untuk aktivasi ulang.');
+    } catch (error) {
+      console.error('Update profile error:', error);
+      return response.serverError(res, 'Gagal memperbarui data akun');
+    }
   }
 };
 
