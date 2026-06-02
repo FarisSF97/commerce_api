@@ -453,7 +453,7 @@ exports.checkout_send_wa = async (dt) => {
   const subtotal = parseInt(dt.payload.harga) * qty;
   const total = parseInt(dt.payload.total) || subtotal;
 
-  const deadline = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const deadline = new Date(Date.now() + 1 * 60 * 60 * 1000);
   const deadlineStr = deadline.toLocaleDateString('id-ID', {
     day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
   });
