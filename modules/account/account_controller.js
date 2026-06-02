@@ -196,14 +196,14 @@ const account = {
 
       if (users.length > 0) {
         const resetToken = crypto.randomBytes(32).toString('hex');
-        const expiry = new Date(Date.now() + 60 * 60 * 1000);
+        const expiry = new Date(Date.now() + 5 * 60 * 1000);
 
         await helper.db.execute(
           'UPDATE account SET reset_token = ?, reset_token_expiry = ? WHERE id = ?',
           [resetToken, expiry, users[0].id]
         );
 
-        const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
+        const resetLink = `http://localhost:4500/reset-password/${resetToken}`;
         const subject = 'Reset Password - Telegram Booster';
         const html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -214,7 +214,7 @@ const account = {
             <div style="text-align: center; margin: 30px 0;">
               <a href="${resetLink}" style="display: inline-block; background: #007bff; color: white; padding: 14px 40px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Reset Password</a>
             </div>
-            <p style="color: #6c757d; font-size: 14px;">Link ini berlaku selama 1 jam. Abaikan email ini jika Anda tidak meminta reset password.</p>
+            <p style="color: #6c757d; font-size: 14px;">Link ini berlaku selama 5 menit. Abaikan email ini jika Anda tidak meminta reset password.</p>
             <p style="color: #6c757d; margin-top: 30px;">Hormat kami,<br><strong>Tim Telegram Booster</strong></p>
           </div>
         `;
