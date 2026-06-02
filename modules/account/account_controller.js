@@ -42,7 +42,14 @@ const account = {
       }
       
       if (user.status === 'suspend') {
-        const activationLink = `http://localhost:3000/activate/${user.activation_token}`;
+        const activationToken = crypto.randomBytes(32).toString('hex');
+        const activationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        await helper.db.execute(
+          'UPDATE account SET activation_token = ?, activation_token_expiry = ? WHERE id = ?',
+          [activationToken, activationExpiry, user.id]
+        );
+
+        const activationLink = `http://localhost:3000/activate/${activationToken}`;
         const subject = 'Aktivasi Akun - Telegram Booster';
         const html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -112,7 +119,8 @@ const account = {
       );
       
       const activationToken = crypto.randomBytes(32).toString('hex');
-      await helper.db.execute('UPDATE account SET activation_token = ? WHERE id = ?', [activationToken, result.insertId]);
+      const activationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      await helper.db.execute('UPDATE account SET activation_token = ?, activation_token_expiry = ? WHERE id = ?', [activationToken, activationExpiry, result.insertId]);
       
       const userData = {
         id: result.insertId,
@@ -143,7 +151,7 @@ const account = {
 
     try {
       const [result] = await helper.db.execute(
-        'UPDATE account SET status = ?, activation_token = NULL WHERE activation_token = ?',
+        'UPDATE account SET status = ?, activation_token = NULL, activation_token_expiry = NULL WHERE activation_token = ? AND activation_token_expiry >= NOW()',
         ['aktif', token]
       );
 
@@ -310,10 +318,11 @@ const account = {
       const newNoWa = no_wa || user.no_wa;
 
       const activationToken = crypto.randomBytes(32).toString('hex');
+      const activationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
       await helper.db.execute(
-        'UPDATE account SET nama = ?, email = ?, no_wa = ?, status = ?, activation_token = ? WHERE id = ?',
-        [newNama, newEmail, newNoWa, 'suspend', activationToken, account_id]
+        'UPDATE account SET nama = ?, email = ?, no_wa = ?, status = ?, activation_token = ?, activation_token_expiry = ? WHERE id = ?',
+        [newNama, newEmail, newNoWa, 'suspend', activationToken, activationExpiry, account_id]
       );
 
       const activationLink = `http://localhost:3000/activate/${activationToken}`;

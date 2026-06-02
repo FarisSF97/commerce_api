@@ -274,7 +274,8 @@ exports.checkout_create_account = async (dt) => {
         
         // Generate activation token
         const activationToken = crypto.randomBytes(32).toString('hex');
-        await helper.db.query(`UPDATE account SET activation_token = ? WHERE id = ?`, [activationToken, rows2.insertId]);
+        const activationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        await helper.db.query(`UPDATE account SET activation_token = ?, activation_token_expiry = ? WHERE id = ?`, [activationToken, activationExpiry, rows2.insertId]);
         dt.payload.activation_token = activationToken;
         
         // Store raw password for WhatsApp message (temporary, will be sent)
