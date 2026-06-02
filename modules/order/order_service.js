@@ -1,8 +1,20 @@
 const helper = require("../../common/helper");
 
-exports.getOrders = async (account_id, page = 1, limit = 10, search = '') => {
+exports.getOrders = async (account_id, page = 1, limit = 10, search = '', sort_by = 'tanggal', sort_dir = 'DESC') => {
   try {
     const offset = (page - 1) * limit;
+
+    const sortMap = {
+      invoice: 'o.invoice',
+      tanggal: 'o.created_at',
+      produk: 'p.nama',
+      qty: 'o.qty',
+      total: 'o.total',
+      status: 'o.status'
+    };
+
+    const sortColumn = sortMap[sort_by] || 'o.created_at';
+    const sortDir = sort_dir === 'ASC' ? 'ASC' : 'DESC';
 
     let countSql = `SELECT COUNT(*) AS total FROM \`order\` o JOIN products p ON o.products_id = p.id WHERE o.account_id = ?`;
     let selectSql = `SELECT o.id, o.invoice, o.products_id, o.harga, o.qty, o.subtotal, o.diskon_jumlah, o.total, o.status, o.created_at,
@@ -23,7 +35,7 @@ exports.getOrders = async (account_id, page = 1, limit = 10, search = '') => {
       selectParams.push(like, like);
     }
 
-    selectSql += ` ORDER BY o.id DESC LIMIT ? OFFSET ?`;
+    selectSql += ` ORDER BY ${sortColumn} ${sortDir}, o.id DESC LIMIT ? OFFSET ?`;
     selectParams.push(limit, offset);
 
     const [[{ total }]] = await helper.db.query(countSql, countParams);

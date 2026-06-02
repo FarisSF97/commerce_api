@@ -2,19 +2,23 @@ const helper = require('../../common/helper');
 const { response } = helper;
 const service = require('./order_service');
 
+const allowedSortBy = ['invoice', 'tanggal', 'produk', 'qty', 'total', 'status'];
+
 const order = {
   getOrders: async (req, res) => {
     const { account_id } = req.params;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const search = (req.query.search || '').trim();
+    const sort_by = allowedSortBy.includes(req.query.sort_by) ? req.query.sort_by : 'tanggal';
+    const sort_dir = req.query.sort_dir === 'ASC' ? 'ASC' : 'DESC';
 
     if (!account_id) {
       return response.error(res, 'account_id diperlukan', 400);
     }
 
     try {
-      const result = await service.getOrders(account_id, page, limit, search);
+      const result = await service.getOrders(account_id, page, limit, search, sort_by, sort_dir);
       return response.success(res, result, 'Orders retrieved successfully');
     } catch (error) {
       console.error('Get orders error:', error);
