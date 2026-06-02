@@ -5,14 +5,16 @@ const service = require('./order_service');
 const order = {
   getOrders: async (req, res) => {
     const { account_id } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
 
     if (!account_id) {
       return response.error(res, 'account_id diperlukan', 400);
     }
 
     try {
-      const orders = await service.getOrders(account_id);
-      return response.success(res, orders, 'Orders retrieved successfully');
+      const result = await service.getOrders(account_id, page, limit);
+      return response.success(res, result, 'Orders retrieved successfully');
     } catch (error) {
       console.error('Get orders error:', error);
       return response.serverError(res, 'Gagal mengambil data pesanan');
