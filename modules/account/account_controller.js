@@ -263,6 +263,30 @@ const account = {
     }
   },
 
+  validateResetToken: async (req, res) => {
+    const { token } = req.params;
+
+    if (!token) {
+      return response.error(res, 'Token diperlukan', 400);
+    }
+
+    try {
+      const [users] = await helper.db.execute(
+        'SELECT id FROM account WHERE reset_token = ? AND reset_token_expiry >= NOW() LIMIT 1',
+        [token]
+      );
+
+      if (users.length === 0) {
+        return response.error(res, 'Token tidak valid atau sudah kedaluwarsa', 400);
+      }
+
+      return response.success(res, null, 'Token valid');
+    } catch (error) {
+      console.error('Validate reset token error:', error);
+      return response.serverError(res, 'Gagal memvalidasi token');
+    }
+  },
+
   updateProfile: async (req, res) => {
     const { account_id, nama, email, no_wa } = req.body;
 

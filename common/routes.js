@@ -33,6 +33,7 @@ router.get("/activate/:token", account.activate);
 router.post("/change_password", account.changePassword);
 router.post("/forgot_password", account.forgotPassword);
 router.post("/reset_password", account.resetPassword);
+router.get("/validate_reset_token/:token", account.validateResetToken);
 router.post("/update_profile", account.updateProfile);
 
 module.exports = router;
