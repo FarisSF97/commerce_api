@@ -3,6 +3,7 @@ const { response } = helper;
 const service = require('./order_service');
 
 const allowedSortBy = ['invoice', 'tanggal', 'produk', 'qty', 'total', 'status'];
+const allowedStatuses = ['pending', 'paid', 'cancel'];
 
 const order = {
   getOrders: async (req, res) => {
@@ -12,13 +13,14 @@ const order = {
     const search = (req.query.search || '').trim();
     const sort_by = allowedSortBy.includes(req.query.sort_by) ? req.query.sort_by : 'tanggal';
     const sort_dir = req.query.sort_dir === 'ASC' ? 'ASC' : 'DESC';
+    const filter_status = allowedStatuses.includes(req.query.filter_status) ? req.query.filter_status : '';
 
     if (!account_id) {
       return response.error(res, 'account_id diperlukan', 400);
     }
 
     try {
-      const result = await service.getOrders(account_id, page, limit, search, sort_by, sort_dir);
+      const result = await service.getOrders(account_id, page, limit, search, sort_by, sort_dir, filter_status);
       return response.success(res, result, 'Orders retrieved successfully');
     } catch (error) {
       console.error('Get orders error:', error);

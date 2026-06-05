@@ -1,6 +1,8 @@
 const helper = require("../../common/helper");
 
-exports.getOrders = async (account_id, page = 1, limit = 10, search = '', sort_by = 'tanggal', sort_dir = 'DESC') => {
+const allowedStatuses = ['pending', 'paid', 'cancel'];
+
+exports.getOrders = async (account_id, page = 1, limit = 10, search = '', sort_by = 'tanggal', sort_dir = 'DESC', filter_status = '') => {
   try {
     const offset = (page - 1) * limit;
 
@@ -33,6 +35,13 @@ exports.getOrders = async (account_id, page = 1, limit = 10, search = '', sort_b
       selectSql += ` AND (LOWER(o.invoice) LIKE ? OR LOWER(p.nama) LIKE ?)`;
       countParams.push(like, like);
       selectParams.push(like, like);
+    }
+
+    if (filter_status && allowedStatuses.includes(filter_status)) {
+      countSql += ` AND o.status = ?`;
+      selectSql += ` AND o.status = ?`;
+      countParams.push(filter_status);
+      selectParams.push(filter_status);
     }
 
     selectSql += ` ORDER BY ${sortColumn} ${sortDir}, o.id DESC LIMIT ? OFFSET ?`;
