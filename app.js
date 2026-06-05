@@ -2,9 +2,9 @@ const express = require('express');
 const path = require('path');
 const app = express();
 const routes = require('./common/routes');
-const { worker10s } = require('./common/worker');
+const { worker60s } = require('./common/worker');
 
-worker10s();
+worker60s();
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;

@@ -87,3 +87,27 @@ exports.cancelOrder = async (order_id, account_id) => {
     throw e;
   }
 };
+
+exports.autoCancelExpiredOrders = async () => {
+  try {
+    const [rows] = await helper.db.query(
+      `SELECT id FROM \`order\` WHERE status = 'pending' AND created_at < NOW() - INTERVAL 1 HOUR`
+    );
+    if (rows.length === 0) return;
+
+    const ids = rows.map(r => r.id);
+    const [orderResult] = await helper.db.query(
+      `UPDATE \`order\` SET status = 'cancel' WHERE id IN (?) AND status = 'pending'`,
+      [ids]
+    );
+    if (orderResult.affectedRows > 0) {
+      await helper.db.query(
+        `UPDATE order_item SET status = 'cancel' WHERE order_id IN (?) AND status = 'pending'`,
+        [ids]
+      );
+      console.log(`[AutoCancel] ${orderResult.affectedRows} order(s) expired and cancelled`);
+    }
+  } catch (e) {
+    console.log('[AutoCancel] Error:', e.message);
+  }
+};
