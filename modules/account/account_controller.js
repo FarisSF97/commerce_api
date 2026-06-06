@@ -21,7 +21,7 @@ const account = {
       console.log('Users found:', users.length);
       
       if (users.length === 0) {
-        return response.unauthorized(res, 'Invalid email or password');
+        return response.unauthorized(res, 'Email/password salah!');
       }
       
       const user = users[0];
@@ -38,7 +38,7 @@ const account = {
       }
       
       if (!isValidPassword) {
-        return response.unauthorized(res, 'Invalid email or password');
+        return response.unauthorized(res, 'Email/password salah!');
       }
       
       if (user.status === 'suspend') {
@@ -65,7 +65,7 @@ const account = {
           </div>
         `;
         await emailService.sendEmail(email, subject, html);
-        return response.error(res, 'Akun Anda belum diaktifkan. Silakan cek email untuk link aktivasi.', 403);
+        return response.error(res, 'Akun Anda belum aktif.\nSilakan cek email Anda untuk mengaktifkan akun.', 403);
       }
       
       const userData = {
@@ -98,7 +98,7 @@ const account = {
     }
     
     if (password !== confirmPassword) {
-      return response.error(res, 'Passwords do not match', 400);
+      return response.error(res, 'Password tidak sama!', 400);
     }
     
     try {
@@ -108,7 +108,7 @@ const account = {
       );
       
       if (existingUsers.length > 0) {
-        return response.error(res, 'User already exists', 400);
+        return response.error(res, 'Email/Nomor WhatsApp telah terdaftar!', 400);
       }
 
       const waTrimmed = whatsapp.trim();
@@ -117,7 +117,7 @@ const account = {
         [waTrimmed]
       );
       if (waExists.length > 0) {
-        return response.error(res, 'Nomor WhatsApp sudah digunakan akun lain', 400);
+        return response.error(res, 'Email/Nomor WhatsApp telah terdaftar!', 400);
       }
       
       const hashedPassword = wpHash.HashPassword(password);
@@ -168,7 +168,7 @@ const account = {
         return response.error(res, 'Token tidak valid atau sudah digunakan', 404);
       }
 
-      return response.success(res, null, 'Akun berhasil diaktifkan');
+      return response.success(res, null, 'Akun Anda sudah aktif! Silakan login kembali.');
     } catch (error) {
       console.error('Activate error:', error);
       return response.serverError(res, 'Gagal mengaktifkan akun');
@@ -238,7 +238,7 @@ const account = {
         await emailService.sendEmail(email, subject, html);
       }
 
-      return response.success(res, null, 'Jika email terdaftar, link reset password telah dikirim.');
+      return response.success(res, null, 'Link reset password telah dikirim.');
     } catch (error) {
       console.error('Forgot password error:', error);
       return response.serverError(res, 'Gagal memproses reset password');
@@ -329,7 +329,7 @@ const account = {
           [email, account_id]
         );
         if (emailExists.length > 0) {
-          return response.error(res, 'Email sudah digunakan akun lain', 400);
+          return response.error(res, 'Email/Nomor WhatsApp telah terdaftar!', 400);
         }
       }
 
@@ -340,7 +340,7 @@ const account = {
           [waTrimmed, account_id]
         );
         if (waExists.length > 0) {
-          return response.error(res, 'Nomor WhatsApp sudah digunakan akun lain', 400);
+          return response.error(res, 'Email/Nomor WhatsApp telah terdaftar!', 400);
         }
       }
 
