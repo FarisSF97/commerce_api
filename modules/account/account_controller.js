@@ -110,12 +110,21 @@ const account = {
       if (existingUsers.length > 0) {
         return response.error(res, 'User already exists', 400);
       }
+
+      const waTrimmed = whatsapp.trim();
+      const [waExists] = await helper.db.execute(
+        'SELECT id FROM account WHERE TRIM(no_wa) = ? LIMIT 1',
+        [waTrimmed]
+      );
+      if (waExists.length > 0) {
+        return response.error(res, 'Nomor WhatsApp sudah digunakan akun lain', 400);
+      }
       
       const hashedPassword = wpHash.HashPassword(password);
       
       const [result] = await helper.db.execute(
         'INSERT INTO account (nama, email, password, no_wa) VALUES (?, ?, ?, ?)',
-        [name, email, hashedPassword, whatsapp]
+        [name, email, hashedPassword, waTrimmed]
       );
       
       const activationToken = crypto.randomBytes(32).toString('hex');
@@ -313,9 +322,31 @@ const account = {
       }
 
       const user = users[0];
+
+      if (email && email !== user.email) {
+        const [emailExists] = await helper.db.execute(
+          'SELECT id FROM account WHERE email = ? AND id != ? LIMIT 1',
+          [email, account_id]
+        );
+        if (emailExists.length > 0) {
+          return response.error(res, 'Email sudah digunakan akun lain', 400);
+        }
+      }
+
+      const waTrimmed = no_wa?.trim() || '';
+      if (waTrimmed && waTrimmed !== (user.no_wa || '').trim()) {
+        const [waExists] = await helper.db.execute(
+          'SELECT id FROM account WHERE TRIM(no_wa) = ? AND id != ? LIMIT 1',
+          [waTrimmed, account_id]
+        );
+        if (waExists.length > 0) {
+          return response.error(res, 'Nomor WhatsApp sudah digunakan akun lain', 400);
+        }
+      }
+
       const newNama = nama || user.nama;
       const newEmail = email || user.email;
-      const newNoWa = no_wa || user.no_wa;
+      const newNoWa = waTrimmed || user.no_wa;
 
       const activationToken = crypto.randomBytes(32).toString('hex');
       const activationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);

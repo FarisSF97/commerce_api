@@ -14,7 +14,7 @@ function generateRandomPassword(length) {
 exports.checkout_capture_payload = async (body) => {
   let nama = body?.nama || '';
   let email = body?.email || '';
-  let no_wa = body?.no_wa || '';
+  let no_wa = body?.no_wa?.trim() || '';
   let password = body?.password || '';
   let payment_method = body?.payment_method || '';
   let product_id = body?.product_id || '';
