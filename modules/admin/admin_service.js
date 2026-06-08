@@ -112,8 +112,8 @@ exports.listOrders = async ({ page = 1, limit = 10, search = '', sort_by = 'tang
   const sortDir = sort_dir === 'ASC' ? 'ASC' : 'DESC';
 
   let countSql = `SELECT COUNT(*) AS total FROM \`order\` o JOIN products p ON o.products_id = p.id JOIN account a ON o.account_id = a.id WHERE 1=1`;
-  let selectSql = `SELECT o.id, o.invoice, o.account_id, a.nama AS account_name, a.email AS account_email,
-                          p.nama AS product_name, o.harga, o.qty, o.subtotal, o.diskon_jumlah, o.total, o.status, o.created_at,
+  let selectSql = `SELECT o.id, o.invoice, o.account_id, a.nama AS account_name, a.email AS account_email, a.no_wa AS account_wa,
+                          p.nama AS product_name, p.kode_unik, o.harga, o.qty, o.subtotal, o.diskon_jumlah, o.total, o.status, o.created_at,
                           b.jenis_bank AS bank_name, b.no_rek AS bank_account, b.atas_nama AS bank_owner
                    FROM \`order\` o
                    JOIN products p ON o.products_id = p.id
