@@ -43,6 +43,7 @@ router.get("/admin/users/:id", admin.getUser);
 router.post("/admin/users", admin.createUser);
 router.put("/admin/users/:id", admin.updateUser);
 router.delete("/admin/users/:id", admin.deleteUser);
+router.put("/admin/users/:id/password", admin.resetUserPassword);
 router.get("/admin/orders", admin.listOrders);
 router.put("/admin/orders/:id/status", admin.updateOrderStatus);
 

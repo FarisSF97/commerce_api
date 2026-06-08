@@ -81,6 +81,14 @@ exports.updateUser = async (id, { nama, email, no_wa, status, role }) => {
   return { affectedRows: result.affectedRows };
 };
 
+exports.resetUserPassword = async (id, hashedPassword) => {
+  const [result] = await helper.db.execute(
+    'UPDATE account SET password = ? WHERE id = ?',
+    [hashedPassword, id]
+  );
+  return { affectedRows: result.affectedRows };
+};
+
 exports.deleteUser = async (id) => {
   const [result] = await helper.db.execute(
     "UPDATE account SET status = 'cancel' WHERE id = ?",

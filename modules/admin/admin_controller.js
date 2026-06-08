@@ -111,6 +111,29 @@ exports.updateUser = async (req, res) => {
   }
 };
 
+exports.resetUserPassword = async (req, res) => {
+  const admin = await verifyAdmin(req.body.admin_id);
+  if (!admin) return response.error(res, 'Unauthorized', 401);
+
+  const { password } = req.body;
+  if (!password || password.length < 4) {
+    return response.error(res, 'Password minimal 4 karakter', 400);
+  }
+
+  try {
+    const user = await service.getUser(req.params.id);
+    if (!user) return response.error(res, 'User tidak ditemukan', 404);
+
+    const hashedPassword = wpHash.HashPassword(password);
+    await service.resetUserPassword(req.params.id, hashedPassword);
+
+    return response.success(res, { password }, 'Password user berhasil direset');
+  } catch (e) {
+    console.error('resetUserPassword error:', e);
+    return response.serverError(res, 'Gagal mereset password user');
+  }
+};
+
 exports.deleteUser = async (req, res) => {
   const admin = await verifyAdmin(req.body.admin_id);
   if (!admin) return response.error(res, 'Unauthorized', 401);
