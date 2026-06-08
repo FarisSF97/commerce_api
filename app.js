@@ -8,7 +8,7 @@ worker60s();
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  const allowedOrigins = ["http://localhost:3000", "http://localhost:4500"];
+  const allowedOrigins = ["http://localhost:3000", "http://localhost:4500", "http://localhost:7900"];
   if (allowedOrigins.includes(origin)) {
     res.header("Access-Control-Allow-Origin", origin);
   } else {

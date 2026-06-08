@@ -6,6 +6,7 @@ const checkout = require('../modules/checkout/checkout_controller');
 const account = require('../modules/account/account_controller');
 const coupon = require('../modules/coupon/coupon_controller');
 const order = require('../modules/order/order_controller');
+const admin = require('../modules/admin/admin_controller');
 
 // Product routes
 router.get("/get_all_products", product.get_all_products);
@@ -35,5 +36,14 @@ router.post("/forgot_password", account.forgotPassword);
 router.post("/reset_password", account.resetPassword);
 router.get("/validate_reset_token/:token", account.validateResetToken);
 router.post("/update_profile", account.updateProfile);
+
+// Admin routes
+router.get("/admin/users", admin.listUsers);
+router.get("/admin/users/:id", admin.getUser);
+router.post("/admin/users", admin.createUser);
+router.put("/admin/users/:id", admin.updateUser);
+router.delete("/admin/users/:id", admin.deleteUser);
+router.get("/admin/orders", admin.listOrders);
+router.put("/admin/orders/:id/status", admin.updateOrderStatus);
 
 module.exports = router;

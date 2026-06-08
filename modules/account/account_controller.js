@@ -73,6 +73,7 @@ const account = {
         name: user.name || user.username || user.display_name || user.nama || email.split('@')[0],
         email: user.email,
         whatsapp: user.whatsapp || user.phone || user.no_wa || user.no_telepon || null,
+        role: user.role || 'user',
         card: {
           name: user.card_name || null,
           number: user.card_last4 || null,
