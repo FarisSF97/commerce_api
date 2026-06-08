@@ -114,10 +114,12 @@ exports.listOrders = async ({ page = 1, limit = 10, search = '', sort_by = 'tang
   let countSql = `SELECT COUNT(*) AS total FROM \`order\` o JOIN products p ON o.products_id = p.id JOIN account a ON o.account_id = a.id WHERE 1=1`;
   let selectSql = `SELECT o.id, o.invoice, o.account_id, a.nama AS account_name, a.email AS account_email, a.no_wa AS account_wa,
                           p.nama AS product_name, p.kode_unik, o.harga, o.qty, o.subtotal, o.diskon_jumlah, o.total, o.status, o.created_at,
+                          k.kode AS kupon_kode,
                           b.jenis_bank AS bank_name, b.no_rek AS bank_account, b.atas_nama AS bank_owner
                    FROM \`order\` o
                    JOIN products p ON o.products_id = p.id
                    JOIN account a ON o.account_id = a.id
+                   LEFT JOIN kupon k ON o.kupon_id = k.id
                    LEFT JOIN bank b ON o.bank_id = b.id
                    WHERE 1=1`;
   const countParams = [];
