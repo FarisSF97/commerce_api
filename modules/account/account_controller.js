@@ -219,7 +219,7 @@ const account = {
   },
 
   forgotPassword: async (req, res) => {
-    const { email } = req.body;
+    const { email, redirect_port } = req.body;
 
     if (!email) {
       return response.error(res, 'Email diperlukan', 400);
@@ -240,7 +240,8 @@ const account = {
           [resetToken, expiry, users[0].id]
         );
 
-        const resetLink = `http://localhost:4500/reset-password/${resetToken}`;
+        const port = redirect_port || 4500;
+        const resetLink = `http://localhost:${port}/reset-password/${resetToken}`;
         const subject = 'Reset Password - Telegram Booster';
         const html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
