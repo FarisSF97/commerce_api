@@ -53,10 +53,10 @@ exports.getUser = async (id) => {
   return rows[0] || null;
 };
 
-exports.createUser = async ({ nama, email, no_wa, role }) => {
+exports.createUser = async ({ nama, email, no_wa, password, role }) => {
   const [result] = await helper.db.execute(
-    'INSERT INTO account (nama, email, no_wa, status, role) VALUES (?, ?, ?, ?, ?)',
-    [nama, email, no_wa, 'suspend', role || 'user']
+    'INSERT INTO account (nama, email, no_wa, password, status, role) VALUES (?, ?, ?, ?, ?, ?)',
+    [nama, email, no_wa, password, 'aktif', role || 'user']
   );
   return { id: result.insertId };
 };

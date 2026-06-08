@@ -1,5 +1,6 @@
 const helper = require('../../common/helper');
 const service = require('./admin_service');
+const wpHash = require('wordpress-hash-node');
 
 const { response } = helper;
 
@@ -47,9 +48,12 @@ exports.createUser = async (req, res) => {
   const admin = await verifyAdmin(req.body.admin_id);
   if (!admin) return response.error(res, 'Unauthorized', 401);
 
-  const { nama, email, no_wa, role } = req.body;
+  const { nama, email, no_wa, password, role } = req.body;
   if (!nama || !email) {
     return response.error(res, 'Nama dan email diperlukan', 400);
+  }
+  if (!password || password.length < 4) {
+    return response.error(res, 'Password minimal 4 karakter', 400);
   }
 
   try {
@@ -58,10 +62,13 @@ exports.createUser = async (req, res) => {
       return response.error(res, 'Email sudah terdaftar', 400);
     }
 
+    const hashedPassword = wpHash.HashPassword(password);
+
     const result = await service.createUser({
       nama: nama.trim(),
       email: email.trim().toLowerCase(),
       no_wa: (no_wa || '').trim(),
+      password: hashedPassword,
       role: role || 'user'
     });
     return response.created(res, result, 'User berhasil ditambahkan');
