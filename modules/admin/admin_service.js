@@ -203,7 +203,7 @@ exports.listAllProducts = async () => {
 
 exports.listAllKupon = async () => {
   const [rows] = await helper.db.query(
-    "SELECT id, kode, potongan FROM kupon WHERE status = 'aktif' ORDER BY kode"
+    "SELECT id, kode, potongan, tipe, min_order, valid_from, valid_until FROM kupon WHERE status = 'aktif' ORDER BY kode"
   );
   return rows;
 };
