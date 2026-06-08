@@ -227,11 +227,11 @@ const account = {
 
     try {
       const [users] = await helper.db.execute(
-        'SELECT id FROM account WHERE email = ? LIMIT 1',
+        'SELECT id, status FROM account WHERE email = ? LIMIT 1',
         [email]
       );
 
-      if (users.length > 0) {
+      if (users.length > 0 && users[0].status !== 'cancel') {
         const resetToken = crypto.randomBytes(32).toString('hex');
         const expiry = new Date(Date.now() + 5 * 60 * 1000);
 
