@@ -130,16 +130,31 @@ const account = {
       const activationToken = crypto.randomBytes(32).toString('hex');
       const activationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
       await helper.db.execute('UPDATE account SET activation_token = ?, activation_token_expiry = ? WHERE id = ?', [activationToken, activationExpiry, result.insertId]);
+
+      const activationLink = `http://localhost:3000/activate/${activationToken}`;
+      const subject = 'Aktivasi Akun - Telegram Booster';
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #28a745;">Registrasi Berhasil</h2>
+          <p>Halo <strong>${name}</strong>,</p>
+          <p>Terima kasih telah mendaftar. Silakan klik tombol di bawah untuk mengaktifkan akun Anda:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${activationLink}" style="display: inline-block; background: #28a745; color: white; padding: 14px 40px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Aktifkan Akun</a>
+          </div>
+          <p style="color: #6c757d; font-size: 14px;">Atau salin link berikut ke browser:<br>${activationLink}</p>
+          <p style="color: #6c757d; margin-top: 30px;">Hormat kami,<br><strong>Tim Telegram Booster</strong></p>
+        </div>
+      `;
+      await emailService.sendEmail(email, subject, html);
       
       const userData = {
         id: result.insertId,
         name: name,
         email: email,
-        whatsapp: whatsapp,
-        activation_token: activationToken
+        whatsapp: whatsapp
       };
       
-      return response.created(res, userData, 'Registration successful');
+      return response.created(res, userData, 'Registration successful. Silakan cek email untuk aktivasi.');
       
     } catch (error) {
       console.error('Registration error:', error);
