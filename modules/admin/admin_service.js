@@ -3,8 +3,11 @@ const helper = require('../../common/helper');
 const validRoles = ['user', 'admin'];
 const allowedStatuses = ['pending', 'paid', 'cancel'];
 
-exports.listUsers = async ({ page = 1, limit = 10, search = '', role = '', filter_status = '' }) => {
+exports.listUsers = async ({ page = 1, limit = 10, search = '', role = '', filter_status = '', sort_by = 'created_at', sort_dir = 'DESC' }) => {
   const offset = (page - 1) * limit;
+  const sortMap = { nama: 'nama', email: 'email', no_wa: 'no_wa', status: 'status', role: 'role', created_at: 'created_at' };
+  const safeCol = sortMap[sort_by] || 'created_at';
+  const safeDir = sort_dir === 'ASC' ? 'ASC' : 'DESC';
 
   let countSql = 'SELECT COUNT(*) AS total FROM account WHERE 1=1';
   let selectSql = 'SELECT id, nama, email, no_wa, status, role, created_at FROM account WHERE 1=1';
@@ -33,7 +36,7 @@ exports.listUsers = async ({ page = 1, limit = 10, search = '', role = '', filte
     selectParams.push(filter_status);
   }
 
-  selectSql += ' ORDER BY id DESC LIMIT ? OFFSET ?';
+  selectSql += ' ORDER BY ' + safeCol + ' ' + safeDir + ' LIMIT ? OFFSET ?';
   selectParams.push(limit, offset);
 
   const [[{ total }]] = await helper.db.query(countSql, countParams);

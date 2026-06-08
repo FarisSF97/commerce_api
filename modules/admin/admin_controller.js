@@ -14,14 +14,16 @@ exports.listUsers = async (req, res) => {
   const admin = await verifyAdmin(req.query.admin_id || req.body?.admin_id);
   if (!admin) return response.error(res, 'Unauthorized', 401);
 
-  const { page, limit, search, role, filter_status } = req.query;
+  const { page, limit, search, role, filter_status, sort_by, sort_dir } = req.query;
   try {
     const result = await service.listUsers({
       page: parseInt(page) || 1,
       limit: parseInt(limit) || 10,
       search: (search || '').trim(),
       role: role || '',
-      filter_status: filter_status || ''
+      filter_status: filter_status || '',
+      sort_by: sort_by || 'created_at',
+      sort_dir: sort_dir || 'DESC'
     });
     return response.success(res, result);
   } catch (e) {
