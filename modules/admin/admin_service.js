@@ -169,3 +169,70 @@ exports.updateOrderStatus = async (orderId, status) => {
 
   return { affectedRows: result.affectedRows };
 };
+
+exports.getOrder = async (id) => {
+  const [rows] = await helper.db.query(
+    `SELECT o.id, o.invoice, o.created_at, o.status, o.account_id, a.nama AS account_name, a.email AS account_email, a.no_wa AS account_wa,
+            o.products_id, p.nama AS product_name, p.harga AS product_harga, p.kode_unik AS product_kode_unik,
+            o.harga, o.qty, o.subtotal, o.kupon_id, k.kode AS kupon_kode, k.potongan AS kupon_potongan,
+            o.diskon_jumlah, o.total, o.bank_id, b.jenis_bank AS bank_name, b.no_rek AS bank_account, b.atas_nama AS bank_owner
+     FROM \`order\` o
+     JOIN products p ON o.products_id = p.id
+     JOIN account a ON o.account_id = a.id
+     LEFT JOIN kupon k ON o.kupon_id = k.id
+     LEFT JOIN bank b ON o.bank_id = b.id
+     WHERE o.id = ?`,
+    [id]
+  );
+  return rows[0] || null;
+};
+
+exports.listAllUsers = async () => {
+  const [rows] = await helper.db.query(
+    'SELECT id, nama, email, no_wa FROM account ORDER BY nama'
+  );
+  return rows;
+};
+
+exports.listAllProducts = async () => {
+  const [rows] = await helper.db.query(
+    'SELECT id, nama, harga, kode_unik FROM products ORDER BY nama'
+  );
+  return rows;
+};
+
+exports.listAllKupon = async () => {
+  const [rows] = await helper.db.query(
+    "SELECT id, kode, potongan FROM kupon WHERE status = 'aktif' ORDER BY kode"
+  );
+  return rows;
+};
+
+exports.listAllBanks = async () => {
+  const [rows] = await helper.db.query(
+    "SELECT id, jenis_bank, no_rek, atas_nama FROM bank WHERE status = 'aktif' ORDER BY jenis_bank"
+  );
+  return rows;
+};
+
+exports.updateOrder = async (id, data) => {
+  const { account_id, products_id, invoice, harga, qty, subtotal, kupon_id, diskon_jumlah, total, bank_id, status, created_at } = data;
+
+  const [result] = await helper.db.execute(
+    `UPDATE \`order\` SET account_id = ?, products_id = ?, invoice = ?, harga = ?, qty = ?, subtotal = ?,
+     kupon_id = ?, diskon_jumlah = ?, total = ?, bank_id = ?, status = ?, created_at = ?
+     WHERE id = ?`,
+    [account_id, products_id, invoice, harga, qty, subtotal, kupon_id, diskon_jumlah, total, bank_id, status, created_at, id]
+  );
+
+  if (result.affectedRows > 0) {
+    await helper.db.execute(
+      `UPDATE order_item SET products_id = ?, harga = ?, qty = ?, subtotal = ?,
+       kupon_id = ?, diskon_jumlah = ?, total = ?, bank_id = ?, status = ?
+       WHERE order_id = ?`,
+      [products_id, harga, qty, subtotal, kupon_id, diskon_jumlah, total, bank_id, status, id]
+    );
+  }
+
+  return { affectedRows: result.affectedRows };
+};

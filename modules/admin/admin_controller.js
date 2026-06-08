@@ -169,6 +169,57 @@ exports.listOrders = async (req, res) => {
   }
 };
 
+exports.getOrderEditData = async (req, res) => {
+  const admin = await verifyAdmin(req.query.admin_id || req.body?.admin_id);
+  if (!admin) return response.error(res, 'Unauthorized', 401);
+
+  try {
+    const order = await service.getOrder(req.params.id);
+    if (!order) return response.error(res, 'Order tidak ditemukan', 404);
+
+    const [users, products, kupon, banks] = await Promise.all([
+      service.listAllUsers(),
+      service.listAllProducts(),
+      service.listAllKupon(),
+      service.listAllBanks()
+    ]);
+
+    return response.success(res, { order, users, products, kupon, banks });
+  } catch (e) {
+    console.error('getOrderEditData error:', e);
+    return response.serverError(res, 'Gagal mengambil data edit order');
+  }
+};
+
+exports.updateOrder = async (req, res) => {
+  const admin = await verifyAdmin(req.body.admin_id);
+  if (!admin) return response.error(res, 'Unauthorized', 401);
+
+  const { invoice, created_at, status, account_id, products_id, harga, qty, subtotal, kupon_id, diskon_jumlah, total, bank_id } = req.body;
+
+  if (!invoice || !account_id || !products_id || qty === undefined) {
+    return response.error(res, 'Data order tidak lengkap', 400);
+  }
+
+  if (!['pending', 'paid', 'cancel'].includes(status)) {
+    return response.error(res, 'Status tidak valid', 400);
+  }
+
+  try {
+    const result = await service.updateOrder(req.params.id, {
+      account_id, products_id, invoice, harga, qty, subtotal,
+      kupon_id: kupon_id || null, diskon_jumlah: diskon_jumlah || 0,
+      total, bank_id: bank_id || null, status, created_at
+    });
+
+    if (result.affectedRows === 0) return response.error(res, 'Order tidak ditemukan', 404);
+    return response.success(res, null, 'Order berhasil diperbarui');
+  } catch (e) {
+    console.error('updateOrder error:', e);
+    return response.serverError(res, 'Gagal memperbarui order');
+  }
+};
+
 exports.updateOrderStatus = async (req, res) => {
   const admin = await verifyAdmin(req.body.admin_id);
   if (!admin) return response.error(res, 'Unauthorized', 401);
