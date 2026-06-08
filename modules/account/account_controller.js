@@ -68,6 +68,10 @@ const account = {
         return response.error(res, 'Akun Anda belum aktif.\nSilakan cek email Anda untuk mengaktifkan akun.', 403);
       }
       
+      if (user.status === 'cancel') {
+        return response.error(res, 'Akun anda sudah tidak aktif, silakan hubungi customer service', 403);
+      }
+      
       const userData = {
         id: user.id || user.ID,
         name: user.name || user.username || user.display_name || user.nama || email.split('@')[0],
