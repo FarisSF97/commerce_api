@@ -171,8 +171,8 @@ exports.checkout_get_bank_info = async (dt) => {
     return dt;
   }
 
-  // Skip bank info for card payments
-  if (dt.payload.payment_method === 'card') {
+  // Skip bank info for card and qris payments
+  if (dt.payload.payment_method === 'card' || dt.payload.payment_method === 'qris') {
     return dt;
   }
 

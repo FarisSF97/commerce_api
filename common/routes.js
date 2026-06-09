@@ -7,6 +7,7 @@ const account = require('../modules/account/account_controller');
 const coupon = require('../modules/coupon/coupon_controller');
 const order = require('../modules/order/order_controller');
 const admin = require('../modules/admin/admin_controller');
+const qris = require('../modules/qris/qris_controller');
 
 // Product routes
 router.get("/get_all_products", product.get_all_products);
@@ -36,6 +37,10 @@ router.post("/forgot_password", account.forgotPassword);
 router.post("/reset_password", account.resetPassword);
 router.get("/validate_reset_token/:token", account.validateResetToken);
 router.post("/update_profile", account.updateProfile);
+
+// QRIS routes
+router.post("/qris/create-payment", qris.createQrisPayment);
+router.get("/qris/status/:order_id", qris.checkQrisStatus);
 
 // Admin routes
 router.get("/admin/users", admin.listUsers);
