@@ -18,7 +18,7 @@ exports.getOrders = async (account_id, page = 1, limit = 10, search = '', sort_b
     const sortColumn = sortMap[sort_by] || 'o.created_at';
     const sortDir = sort_dir === 'ASC' ? 'ASC' : 'DESC';
 
-    let countSql = `SELECT COUNT(*) AS total FROM \`order\` o JOIN products p ON o.products_id = p.id WHERE o.account_id = ?`;
+    let countSql = `SELECT COUNT(*) AS total FROM \`order\` o JOIN products p ON o.products_id = p.id WHERE o.account_id = ? AND o.status != 'delete'`;
     let selectSql = `SELECT o.id, o.invoice, o.products_id, o.harga, o.qty, o.subtotal, o.diskon_jumlah, o.total, o.status, o.created_at,
                             p.nama AS product_name, p.kode_unik,
                             k.kode AS kupon_kode,
@@ -27,7 +27,7 @@ exports.getOrders = async (account_id, page = 1, limit = 10, search = '', sort_b
                      JOIN products p ON o.products_id = p.id
                      LEFT JOIN kupon k ON o.kupon_id = k.id
                      LEFT JOIN bank b ON o.bank_id = b.id
-                     WHERE o.account_id = ?`;
+                     WHERE o.account_id = ? AND o.status != 'delete'`;
     const countParams = [account_id];
     const selectParams = [account_id];
 

@@ -203,7 +203,7 @@ exports.updateOrder = async (req, res) => {
     return response.error(res, 'Data order tidak lengkap', 400);
   }
 
-  if (!['pending', 'paid', 'cancel'].includes(status)) {
+  if (!['pending', 'paid', 'cancel', 'delete'].includes(status)) {
     return response.error(res, 'Status tidak valid', 400);
   }
 
@@ -227,7 +227,7 @@ exports.updateOrderStatus = async (req, res) => {
   if (!admin) return response.error(res, 'Unauthorized', 401);
 
   const { status } = req.body;
-  if (!['pending', 'paid', 'cancel'].includes(status)) {
+  if (!['pending', 'paid', 'cancel', 'delete'].includes(status)) {
     return response.error(res, 'Status tidak valid', 400);
   }
 

@@ -1,7 +1,7 @@
 const helper = require('../../common/helper');
 
 const validRoles = ['user', 'admin'];
-const allowedStatuses = ['pending', 'paid', 'cancel'];
+const allowedStatuses = ['pending', 'paid', 'cancel', 'delete'];
 
 exports.listUsers = async ({ page = 1, limit = 10, search = '', role = '', filter_status = '', sort_by = 'created_at', sort_dir = 'DESC' }) => {
   const offset = (page - 1) * limit;
