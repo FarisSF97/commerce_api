@@ -31,7 +31,7 @@ exports.sendCheckoutEmail = async (dt) => {
     return dt;
   }
 
-  const { email, nama, product_name, harga, qty, diskon, kode_unik, total, payment_deadline, generated_password, activation_token } = dt.payload;
+  const { email, nama, product_name, harga, qty, diskon, kode_unik, total, payment_deadline, generated_password, activation_token, payment_method } = dt.payload;
   
   const subtotal = parseInt(harga) * parseInt(qty);
   const diskonValue = parseInt(diskon) || 0;
@@ -56,6 +56,14 @@ exports.sendCheckoutEmail = async (dt) => {
         <p><strong>Total:</strong> Rp${totalValue.toLocaleString('id-ID')}</p>
       </div>
       
+      ${payment_method === 'qris' ? `
+      <p>Pembayaran menggunakan QRIS. Silakan buka halaman pembayaran di website Telegram Booster untuk melakukan scan QRIS.</p>
+      
+      <div style="background: #e9ecef; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0;">Pembayaran QRIS</h3>
+        <p><strong>Metode:</strong> QRIS (Scan)</p>
+        <p><strong>Batas Pembayaran:</strong> ${payment_deadline || '-'}</p>
+      </div>` : `
       <p>Silhkan lakukan pembayaran ke rekening berikut:</p>
       
       <div style="background: #e9ecef; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -65,7 +73,7 @@ exports.sendCheckoutEmail = async (dt) => {
         <p><strong>Atas Nama:</strong> ${dt.payload.bank_owner || 'PT. Star Frost'}</p>
         <p><strong>Batas Pembayaran:</strong> ${payment_deadline || '-'}</p>
         <p style="color: #dc3545;">Setelah melakukan pembayaran, silakan kirim bukti pembayaran ke WhatsApp: ${process.env.WA_NUMBER}</p>
-      </div>
+      </div>`}
       
       ${generated_password ? `
       <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #ffc107;">

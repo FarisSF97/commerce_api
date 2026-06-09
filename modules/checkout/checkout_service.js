@@ -437,7 +437,7 @@ exports.checkout_send_wa = async (dt) => {
   }
 
   // Use bank info already read by checkout_get_bank_info
-  if (!dt.payload.bank_id) {
+  if (!dt.payload.bank_id && dt.payload.payment_method !== 'qris') {
     dt.payload.bank_name = 'BCA';
     dt.payload.bank_account = '123456789';
     dt.payload.bank_owner = 'PT. Star Frost';
@@ -469,14 +469,20 @@ exports.checkout_send_wa = async (dt) => {
   Diskon: -Rp${diskon.toLocaleString('id-ID')}` : ''}
   Kode Unik: -Rp${kodeUnik.toLocaleString('id-ID')}
   *Total: Rp${total.toLocaleString('id-ID')}*
-  
-  Anda bisa melakukan pembayaran ke nomor rekening berikut:
+  `;
+
+  if (dt.payload.payment_method === 'qris') {
+    message += `Pembayaran menggunakan QRIS. Silakan scan QRIS melalui halaman pembayaran di website Telegram Booster untuk menyelesaikan pembayaran.
+  Batas Pembayaran: ${deadlineStr}`;
+  } else {
+    message += `Anda bisa melakukan pembayaran ke nomor rekening berikut:
   Bank: ${dt.payload.bank_name}
   No Rekening: ${dt.payload.bank_account}
   Atas Nama: ${dt.payload.bank_owner}
   Batas Pembayaran: ${deadlineStr}
   
   Apabila Anda sudah melakukan pembayaran, silakan kirim bukti pembayaran ke nomor WhatsApp ini: ${process.env.WA_NUMBER}`;
+  };
   
   // Add login credentials if this is a new guest account
   if (dt.payload.generated_password && dt.payload.generated_email) {
