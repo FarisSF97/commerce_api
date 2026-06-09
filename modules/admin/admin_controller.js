@@ -1,6 +1,7 @@
 const helper = require('../../common/helper');
 const service = require('./admin_service');
 const wpHash = require('wordpress-hash-node');
+const notification = require('../notification/notification_service');
 
 const { response } = helper;
 
@@ -215,6 +216,11 @@ exports.updateOrder = async (req, res) => {
     });
 
     if (result.affectedRows === 0) return response.error(res, 'Order tidak ditemukan', 404);
+    if (status === 'paid') {
+      notification.sendPaymentNotification(req.params.id).catch(e => {
+        console.log('Payment notification error:', e.message);
+      });
+    }
     return response.success(res, null, 'Order berhasil diperbarui');
   } catch (e) {
     console.error('updateOrder error:', e);
@@ -234,6 +240,11 @@ exports.updateOrderStatus = async (req, res) => {
   try {
     const result = await service.updateOrderStatus(req.params.id, status);
     if (result.affectedRows === 0) return response.error(res, 'Order tidak ditemukan', 404);
+    if (status === 'paid') {
+      notification.sendPaymentNotification(req.params.id).catch(e => {
+        console.log('Payment notification error:', e.message);
+      });
+    }
     return response.success(res, null, `Status order berhasil diubah menjadi ${status}`);
   } catch (e) {
     console.error('updateOrderStatus error:', e);

@@ -1,5 +1,6 @@
 const service = require('./qris_service');
 const helper = require('../../common/helper');
+const notification = require('../notification/notification_service');
 
 exports.createQrisPayment = async (req, res) => {
   try {
@@ -103,6 +104,10 @@ exports.checkQrisStatus = async (req, res) => {
         [orderId]
       );
       order.status = 'paid';
+
+      notification.sendPaymentNotification(orderId).catch(e => {
+        console.log('Payment notification error:', e.message);
+      });
     }
 
     if (qrisStatus === 'EXPIRED' && order.status === 'pending') {
