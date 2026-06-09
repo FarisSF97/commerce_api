@@ -171,15 +171,19 @@ exports.checkout_get_bank_info = async (dt) => {
     return dt;
   }
 
-  // Skip bank info for card and qris payments
-  if (dt.payload.payment_method === 'card' || dt.payload.payment_method === 'qris') {
+  // Skip bank info for card payments
+  if (dt.payload.payment_method === 'card') {
     return dt;
   }
 
   try {
-    const [bankRows] = await helper.db.query(
-      `SELECT id, jenis_bank, no_rek, atas_nama FROM bank WHERE status = 'aktif' LIMIT 1`
-    );
+    let query;
+    if (dt.payload.payment_method === 'qris') {
+      query = `SELECT id, jenis_bank, no_rek, atas_nama FROM bank WHERE jenis_bank = 'QRIS' AND status = 'aktif' LIMIT 1`;
+    } else {
+      query = `SELECT id, jenis_bank, no_rek, atas_nama FROM bank WHERE status = 'aktif' AND jenis_bank != 'QRIS' LIMIT 1`;
+    }
+    const [bankRows] = await helper.db.query(query);
     if (bankRows.length > 0) {
       dt.payload.bank_name = bankRows[0].jenis_bank;
       dt.payload.bank_account = bankRows[0].no_rek;
