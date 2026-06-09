@@ -106,6 +106,7 @@ exports.listOrders = async ({ page = 1, limit = 10, search = '', sort_by = 'tang
   const sortMap = {
     invoice: 'o.invoice',
     tanggal: 'o.created_at',
+    pelanggan: 'a.nama',
     produk: 'p.nama',
     qty: 'o.qty',
     total: 'o.total',
