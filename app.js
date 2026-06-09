@@ -8,11 +8,11 @@ worker60s();
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  const allowedOrigins = ["http://localhost:3000", "http://localhost:4500", "http://localhost:7900"];
+  const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:3000,http://localhost:4500,http://localhost:7900").split(",");
   if (allowedOrigins.includes(origin)) {
     res.header("Access-Control-Allow-Origin", origin);
   } else {
-    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+    res.header("Access-Control-Allow-Origin", allowedOrigins[0]);
   }
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers","Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie");

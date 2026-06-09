@@ -49,7 +49,8 @@ const account = {
           [activationToken, activationExpiry, user.id]
         );
 
-        const activationLink = `http://localhost:3000/activate/${activationToken}`;
+        const pageBaseUrl = process.env.PAGE_BASE_URL || 'http://localhost:3000';
+        const activationLink = `${pageBaseUrl}/activate/${activationToken}`;
         const subject = 'Aktivasi Akun - Telegram Booster';
         const html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -136,7 +137,8 @@ const account = {
       const activationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
       await helper.db.execute('UPDATE account SET activation_token = ?, activation_token_expiry = ? WHERE id = ?', [activationToken, activationExpiry, result.insertId]);
 
-      const activationLink = `http://localhost:3000/activate/${activationToken}`;
+      const pageBaseUrl = process.env.PAGE_BASE_URL || 'http://localhost:3000';
+      const activationLink = `${pageBaseUrl}/activate/${activationToken}`;
       const subject = 'Aktivasi Akun - Telegram Booster';
       const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -240,8 +242,10 @@ const account = {
           [resetToken, expiry, users[0].id]
         );
 
-        const port = redirect_port || 4500;
-        const resetLink = `http://localhost:${port}/reset-password/${resetToken}`;
+        const port = parseInt(redirect_port) || 4500;
+        const urlMap = { 3000: process.env.PAGE_BASE_URL || 'http://localhost:3000', 4500: process.env.MEMBER_BASE_URL || 'http://localhost:4500', 7900: process.env.ADMIN_BASE_URL || 'http://localhost:7900' };
+        const baseUrl = urlMap[port] || urlMap[4500];
+        const resetLink = `${baseUrl}/reset-password/${resetToken}`;
         const subject = 'Reset Password - Telegram Booster';
         const html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -377,7 +381,8 @@ const account = {
         [newNama, newEmail, newNoWa, 'suspend', activationToken, activationExpiry, account_id]
       );
 
-      const activationLink = `http://localhost:3000/activate/${activationToken}`;
+      const pageBaseUrl = process.env.PAGE_BASE_URL || 'http://localhost:3000';
+      const activationLink = `${pageBaseUrl}/activate/${activationToken}`;
       const subject = 'Aktivasi Ulang Akun - Telegram Booster';
       const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

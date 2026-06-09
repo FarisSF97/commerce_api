@@ -80,12 +80,12 @@ exports.sendCheckoutEmail = async (dt) => {
         <h3 style="margin-top: 0; color: #856404;">Aktivasi Akun</h3>
         <p>Akun Anda <strong>belum aktif</strong>. Klik tombol di bawah untuk mengaktifkan:</p>
         <div style="text-align: center; margin: 20px 0;">
-          <a href="http://localhost:3000/activate/${activation_token}" style="display: inline-block; background: #28a745; color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">Aktifkan Akun</a>
+          <a href="${process.env.PAGE_BASE_URL || 'http://localhost:3000'}/activate/${activation_token}" style="display: inline-block; background: #28a745; color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">Aktifkan Akun</a>
         </div>
         <h3 style="margin-top: 20px; color: #856404;">Akun Anda</h3>
         <p><strong>Email:</strong> ${email}</p>
         <p><strong>Password:</strong> ${generated_password}</p>
-        <p style="font-size: 12px; color: #856404;">Harap simpan credentials akun Anda. Anda bisa login di <a href="http://localhost:3000/login"> sini</a> setelah aktivasi.</p>
+        <p style="font-size: 12px; color: #856404;">Harap simpan credentials akun Anda. Anda bisa login di <a href="${process.env.PAGE_BASE_URL || 'http://localhost:3000'}/login"> sini</a> setelah aktivasi.</p>
       </div>
       ` : ''}
       
