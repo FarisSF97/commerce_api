@@ -18,10 +18,11 @@ exports.createQrisPayment = async (req, res) => {
 
     const qrisResult = await service.createKlikQrisTransaction(order_id, invoice, amount, keterangan);
 
-    const qrisUrl = qrisResult.qris_url || null;
-    const qrisImage = qrisResult.qris_image || null;
-    const signature = qrisResult.signature || null;
-    const expiredAt = qrisResult.expired_at || null;
+    const qrisData = qrisResult.data || qrisResult;
+    const qrisUrl = qrisData.qris_url || null;
+    const qrisImage = qrisData.qris_image || null;
+    const signature = qrisData.signature || null;
+    const expiredAt = qrisData.expired_at || null;
 
     if (signature) {
       await helper.db.query(
@@ -83,12 +84,11 @@ exports.checkQrisStatus = async (req, res) => {
     const order = orders[0];
 
     let qrisStatus = 'UNKNOWN';
-    let externalData = null;
 
     try {
       const statusResult = await service.checkKlikQrisStatus(orderId);
-      qrisStatus = statusResult.status || 'UNKNOWN';
-      externalData = statusResult;
+      const statusData = statusResult.data || statusResult;
+      qrisStatus = statusData.status || 'UNKNOWN';
     } catch (e) {
       console.log('KlikQRIS status check error:', e.message);
     }
