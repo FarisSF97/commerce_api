@@ -69,7 +69,7 @@ const account = {
         return response.error(res, 'Akun Anda belum aktif.\nSilakan cek email Anda untuk mengaktifkan akun.', 403);
       }
       
-      if (user.status === 'cancel') {
+      if (user.status === 'delete') {
         return response.error(res, 'Akun anda sudah tidak aktif, silakan hubungi customer service', 403);
       }
       
@@ -233,7 +233,7 @@ const account = {
         [email]
       );
 
-      if (users.length > 0 && users[0].status !== 'cancel') {
+      if (users.length > 0 && users[0].status !== 'delete') {
         const resetToken = crypto.randomBytes(32).toString('hex');
         const expiry = new Date(Date.now() + 5 * 60 * 1000);
 
