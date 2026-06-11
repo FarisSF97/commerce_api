@@ -29,7 +29,7 @@ exports.listUsers = async ({ page = 1, limit = 10, search = '', role = '', filte
     selectParams.push(role);
   }
 
-  if (filter_status && ['aktif', 'suspend', 'cancel'].includes(filter_status)) {
+  if (filter_status && ['aktif', 'suspend', 'delete'].includes(filter_status)) {
     countSql += ' AND status = ?';
     selectSql += ' AND status = ?';
     countParams.push(filter_status);
@@ -94,7 +94,7 @@ exports.resetUserPassword = async (id, hashedPassword) => {
 
 exports.deleteUser = async (id) => {
   const [result] = await helper.db.execute(
-    "UPDATE account SET status = 'cancel' WHERE id = ?",
+    "UPDATE account SET status = 'delete' WHERE id = ?",
     [id]
   );
   return { affectedRows: result.affectedRows };
