@@ -494,7 +494,7 @@ exports.checkout_send_wa = async (dt) => {
   
   🔓 AKUN ANDA BELUM AKTIF
   Klik link berikut untuk mengaktifkan akun Anda:
-  ${process.env.PAGE_BASE_URL || 'http://localhost:3000'}/activate/${dt.payload.activation_token}
+  ${process.env.CHECKOUT_BASE_URL || 'http://localhost:3000'}/activate/${dt.payload.activation_token}
   
   📋 AKUN LOGIN ANDA (setelah aktivasi):
   Email: ${dt.payload.generated_email}
