@@ -50,6 +50,8 @@ router.put("/admin/users/:id", admin.updateUser);
 router.delete("/admin/users/:id", admin.deleteUser);
 router.put("/admin/users/:id/password", admin.resetUserPassword);
 router.get("/admin/orders", admin.listOrders);
+router.get("/admin/orders/create-data", admin.getOrderCreateData);
+router.post("/admin/orders", admin.createOrder);
 router.get("/admin/orders/:id/edit", admin.getOrderEditData);
 router.put("/admin/orders/:id", admin.updateOrder);
 router.put("/admin/orders/:id/status", admin.updateOrderStatus);

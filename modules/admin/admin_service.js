@@ -219,6 +219,53 @@ exports.listAllBanks = async () => {
   return rows;
 };
 
+exports.createOrder = async (data) => {
+  const { account_id, products_id, harga, qty, subtotal, kupon_id, diskon_jumlah, total, bank_id, status } = data;
+
+  const con = await helper.db.getConnection();
+  try {
+    await con.beginTransaction();
+
+    const [result] = await con.execute(
+      `INSERT INTO \`order\` (account_id, products_id, invoice, harga, qty, subtotal, kupon_id, diskon_jumlah, total, bank_id, status, created_at) VALUES (?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [account_id, products_id, harga, qty, subtotal, kupon_id || null, diskon_jumlah || 0, total, bank_id || null, status]
+    );
+
+    const orderId = result.insertId;
+    const now = new Date();
+    const dateStr = now.getFullYear().toString() +
+      (now.getMonth() + 1).toString().padStart(2, '0') +
+      now.getDate().toString().padStart(2, '0');
+    const invoice = `INV-${dateStr}-${orderId}`;
+
+    await con.execute(`UPDATE \`order\` SET invoice = ? WHERE id = ?`, [invoice, orderId]);
+
+    await con.execute(
+      `INSERT INTO order_item (order_id, products_id, harga, qty, subtotal, kupon_id, diskon_jumlah, total, bank_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [orderId, products_id, harga, qty, subtotal, kupon_id || null, diskon_jumlah || 0, total, bank_id || null, status]
+    );
+
+    if (kupon_id) {
+      await con.execute(
+        `UPDATE kupon SET used_count = COALESCE(used_count, 0) + 1 WHERE id = ?`,
+        [kupon_id]
+      );
+      await con.execute(
+        `INSERT INTO kupon_usage (kupon_id, order_id, used_at) VALUES (?, ?, NOW())`,
+        [kupon_id, orderId]
+      );
+    }
+
+    await con.commit();
+    return { id: orderId, invoice };
+  } catch (e) {
+    await con.rollback();
+    throw e;
+  } finally {
+    con.release();
+  }
+};
+
 exports.updateOrder = async (id, data) => {
   const { account_id, products_id, invoice, harga, qty, subtotal, kupon_id, diskon_jumlah, total, bank_id, status, created_at } = data;
 
