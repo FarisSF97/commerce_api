@@ -37,6 +37,7 @@ router.post("/forgot_password", account.forgotPassword);
 router.post("/reset_password", account.resetPassword);
 router.get("/validate_reset_token/:token", account.validateResetToken);
 router.post("/update_profile", account.updateProfile);
+router.post("/upload_avatar", account.uploadAvatar);
 
 // QRIS routes
 router.post("/qris/create-payment", qris.createQrisPayment);
@@ -52,6 +53,7 @@ router.put("/admin/users/:id/password", admin.resetUserPassword);
 router.get("/admin/orders", admin.listOrders);
 router.get("/admin/orders/create-data", admin.getOrderCreateData);
 router.post("/admin/orders", admin.createOrder);
+router.post("/admin/users/:id/avatar", admin.uploadUserAvatar);
 router.get("/admin/orders/:id/edit", admin.getOrderEditData);
 router.put("/admin/orders/:id", admin.updateOrder);
 router.put("/admin/orders/:id/status", admin.updateOrderStatus);

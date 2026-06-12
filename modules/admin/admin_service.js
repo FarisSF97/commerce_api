@@ -10,7 +10,7 @@ exports.listUsers = async ({ page = 1, limit = 10, search = '', role = '', filte
   const safeDir = sort_dir === 'ASC' ? 'ASC' : 'DESC';
 
   let countSql = 'SELECT COUNT(*) AS total FROM account WHERE 1=1';
-  let selectSql = 'SELECT id, nama, email, no_wa, status, role, created_at FROM account WHERE 1=1';
+  let selectSql = 'SELECT id, nama, email, no_wa, foto, status, role, created_at FROM account WHERE 1=1';
   const countParams = [];
   const selectParams = [];
 
@@ -50,7 +50,7 @@ exports.listUsers = async ({ page = 1, limit = 10, search = '', role = '', filte
 
 exports.getUser = async (id) => {
   const [rows] = await helper.db.query(
-    'SELECT id, nama, email, no_wa, status, role, created_at FROM account WHERE id = ?',
+    'SELECT id, nama, email, no_wa, foto, status, role, created_at FROM account WHERE id = ?',
     [id]
   );
   return rows[0] || null;
@@ -193,7 +193,7 @@ exports.getOrder = async (id) => {
 
 exports.listAllUsers = async () => {
   const [rows] = await helper.db.query(
-    'SELECT id, nama, email, no_wa FROM account ORDER BY nama'
+    'SELECT id, nama, email, no_wa, foto FROM account ORDER BY nama'
   );
   return rows;
 };

@@ -30,6 +30,8 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: "50mb"}));
 app.use(express.urlencoded({ extended: true, limit: "50mb"}));
 
+app.use("/uploads", express.static(path.join(__dirname, 'uploads')));
+
 app.use("/",routes);
 
 app.listen(5100, "0.0.0.0", () => {

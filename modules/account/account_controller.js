@@ -1,5 +1,7 @@
 const crypto = require('crypto');
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
 const wpHash = require('wordpress-hash-node');
 const helper = require('../../common/helper');
 const emailService = require('../email/email_service');
@@ -78,6 +80,7 @@ const account = {
         name: user.name || user.username || user.display_name || user.nama || email.split('@')[0],
         email: user.email,
         whatsapp: user.whatsapp || user.phone || user.no_wa || user.no_telepon || null,
+        foto: user.foto || null,
         role: user.role || 'user',
         card: {
           name: user.card_name || null,
@@ -408,6 +411,71 @@ const account = {
     } catch (error) {
       console.error('Update profile error:', error);
       return response.serverError(res, 'Gagal memperbarui data akun');
+    }
+  },
+
+  uploadAvatar: async (req, res) => {
+    const { email, foto_base64 } = req.body;
+
+    if (!email || !foto_base64) {
+      return response.error(res, 'Email dan foto diperlukan', 400);
+    }
+
+    if (!foto_base64.startsWith('data:image/')) {
+      return response.error(res, 'Format foto tidak valid. Gunakan jpg, png, gif, atau webp.', 400);
+    }
+
+    const mimeMatch = foto_base64.match(/^data:image\/(jpeg|png|gif|webp);base64,/);
+    if (!mimeMatch) {
+      return response.error(res, 'Tipe file tidak didukung. Gunakan jpg, png, gif, atau webp.', 400);
+    }
+
+    const extMap = { jpeg: 'jpg', png: 'png', gif: 'gif', webp: 'webp' };
+    const ext = extMap[mimeMatch[1]] || 'jpg';
+
+    const base64Data = foto_base64.replace(/^data:image\/\w+;base64,/, '');
+    const fileSizeBytes = Math.round(base64Data.length * 0.75);
+
+    if (fileSizeBytes > 2 * 1024 * 1024) {
+      return response.error(res, 'Ukuran foto maksimal 2MB', 400);
+    }
+
+    try {
+      const [users] = await helper.db.execute(
+        'SELECT id, foto FROM account WHERE email = ? LIMIT 1',
+        [email]
+      );
+
+      if (users.length === 0) {
+        return response.error(res, 'Akun tidak ditemukan', 404);
+      }
+
+      const user = users[0];
+      const timestamp = Date.now();
+      const fileName = `${user.id}_${timestamp}.${ext}`;
+      const uploadDir = path.join(__dirname, '../../uploads/avatars');
+      const filePath = path.join(uploadDir, fileName);
+
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+
+      fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+
+      if (user.foto) {
+        const oldFilePath = path.join(__dirname, '../../', user.foto.replace(/^\//, ''));
+        if (fs.existsSync(oldFilePath)) {
+          fs.unlinkSync(oldFilePath);
+        }
+      }
+
+      const fotoUrl = `/uploads/avatars/${fileName}`;
+      await helper.db.execute('UPDATE account SET foto = ? WHERE id = ?', [fotoUrl, user.id]);
+
+      return response.success(res, { foto: fotoUrl }, 'Foto profil berhasil diperbarui');
+    } catch (e) {
+      console.error('Upload avatar error:', e);
+      return response.serverError(res, 'Gagal mengunggah foto profil');
     }
   }
 };
