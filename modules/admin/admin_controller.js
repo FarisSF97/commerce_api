@@ -1,6 +1,8 @@
 const helper = require('../../common/helper');
 const service = require('./admin_service');
 const wpHash = require('wordpress-hash-node');
+const path = require('path');
+const fs = require('fs');
 const notification = require('../notification/notification_service');
 
 const { response } = helper;
@@ -278,6 +280,68 @@ exports.createOrder = async (req, res) => {
   } catch (e) {
     console.error('createOrder error:', e);
     return response.serverError(res, 'Gagal membuat order');
+  }
+};
+
+exports.uploadUserAvatar = async (req, res) => {
+  const admin = await verifyAdmin(req.body.admin_id);
+  if (!admin) return response.error(res, 'Unauthorized', 401);
+
+  const { foto_base64 } = req.body;
+  const userId = req.params.id;
+
+  if (!foto_base64) {
+    return response.error(res, 'Foto diperlukan', 400);
+  }
+
+  if (!foto_base64.startsWith('data:image/')) {
+    return response.error(res, 'Format foto tidak valid. Gunakan jpg, png, gif, atau webp.', 400);
+  }
+
+  const mimeMatch = foto_base64.match(/^data:image\/(jpeg|png|gif|webp);base64,/);
+  if (!mimeMatch) {
+    return response.error(res, 'Tipe file tidak didukung. Gunakan jpg, png, gif, atau webp.', 400);
+  }
+
+  const extMap = { jpeg: 'jpg', png: 'png', gif: 'gif', webp: 'webp' };
+  const ext = extMap[mimeMatch[1]] || 'jpg';
+
+  const base64Data = foto_base64.replace(/^data:image\/\w+;base64,/, '');
+  const fileSizeBytes = Math.round(base64Data.length * 0.75);
+
+  if (fileSizeBytes > 2 * 1024 * 1024) {
+    return response.error(res, 'Ukuran foto maksimal 2MB', 400);
+  }
+
+  try {
+    const user = await service.getUser(userId);
+    if (!user) return response.error(res, 'User tidak ditemukan', 404);
+
+    const timestamp = Date.now();
+    const fileName = `${userId}_${timestamp}.${ext}`;
+    const uploadDir = path.join(__dirname, '../uploads/avatars');
+    const filePath = path.join(uploadDir, fileName);
+
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+
+    if (user.foto) {
+      const oldFilePath = path.join(__dirname, '..', user.foto);
+      if (fs.existsSync(oldFilePath)) {
+        fs.unlinkSync(oldFilePath);
+      }
+    }
+
+    const fotoUrl = `/uploads/avatars/${fileName}`;
+    await helper.db.execute('UPDATE account SET foto = ? WHERE id = ?', [fotoUrl, userId]);
+
+    return response.success(res, { foto: fotoUrl }, 'Foto user berhasil diperbarui');
+  } catch (e) {
+    console.error('Upload user avatar error:', e);
+    return response.serverError(res, 'Gagal mengunggah foto user');
   }
 };
 
