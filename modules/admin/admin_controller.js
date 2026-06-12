@@ -228,6 +228,59 @@ exports.updateOrder = async (req, res) => {
   }
 };
 
+exports.getOrderCreateData = async (req, res) => {
+  const admin = await verifyAdmin(req.query.admin_id || req.body?.admin_id);
+  if (!admin) return response.error(res, 'Unauthorized', 401);
+
+  try {
+    const [users, products, kupon, banks] = await Promise.all([
+      service.listAllUsers(),
+      service.listAllProducts(),
+      service.listAllKupon(),
+      service.listAllBanks()
+    ]);
+
+    return response.success(res, { users, products, kupon, banks });
+  } catch (e) {
+    console.error('getOrderCreateData error:', e);
+    return response.serverError(res, 'Gagal mengambil data');
+  }
+};
+
+exports.createOrder = async (req, res) => {
+  const admin = await verifyAdmin(req.body.admin_id);
+  if (!admin) return response.error(res, 'Unauthorized', 401);
+
+  const { account_id, products_id, harga, qty, subtotal, kupon_id, diskon_jumlah, total, bank_id, status } = req.body;
+
+  if (!account_id || !products_id || !qty) {
+    return response.error(res, 'Data order tidak lengkap (pelanggan, produk, jumlah wajib diisi)', 400);
+  }
+
+  if (!['pending', 'paid'].includes(status)) {
+    return response.error(res, 'Status tidak valid', 400);
+  }
+
+  try {
+    const result = await service.createOrder({
+      account_id, products_id, harga, qty, subtotal,
+      kupon_id: kupon_id || null, diskon_jumlah: diskon_jumlah || 0,
+      total, bank_id: bank_id || null, status
+    });
+
+    if (status === 'paid') {
+      notification.sendPaymentNotification(result.id).catch(e => {
+        console.log('Payment notification error:', e.message);
+      });
+    }
+
+    return response.created(res, result, 'Order berhasil dibuat');
+  } catch (e) {
+    console.error('createOrder error:', e);
+    return response.serverError(res, 'Gagal membuat order');
+  }
+};
+
 exports.updateOrderStatus = async (req, res) => {
   const admin = await verifyAdmin(req.body.admin_id);
   if (!admin) return response.error(res, 'Unauthorized', 401);
