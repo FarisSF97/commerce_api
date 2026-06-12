@@ -319,7 +319,7 @@ exports.uploadUserAvatar = async (req, res) => {
 
     const timestamp = Date.now();
     const fileName = `${userId}_${timestamp}.${ext}`;
-    const uploadDir = path.join(__dirname, '../uploads/avatars');
+    const uploadDir = path.join(__dirname, '../../uploads/avatars');
     const filePath = path.join(uploadDir, fileName);
 
     if (!fs.existsSync(uploadDir)) {
@@ -329,7 +329,7 @@ exports.uploadUserAvatar = async (req, res) => {
     fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
 
     if (user.foto) {
-      const oldFilePath = path.join(__dirname, '..', user.foto);
+      const oldFilePath = path.join(__dirname, '../..', user.foto.replace(/^\//, ''));
       if (fs.existsSync(oldFilePath)) {
         fs.unlinkSync(oldFilePath);
       }
