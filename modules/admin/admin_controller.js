@@ -1,9 +1,12 @@
+const crypto = require('crypto');
 const helper = require('../../common/helper');
 const service = require('./admin_service');
 const wpHash = require('wordpress-hash-node');
 const path = require('path');
 const fs = require('fs');
 const notification = require('../notification/notification_service');
+const emailService = require('../email/email_service');
+const waController = require('../whatsapp/whatsapp_controller');
 
 const { response } = helper;
 
@@ -120,19 +123,43 @@ exports.resetUserPassword = async (req, res) => {
   const admin = await verifyAdmin(req.body.admin_id);
   if (!admin) return response.error(res, 'Unauthorized', 401);
 
-  const { password } = req.body;
-  if (!password || password.length < 4) {
-    return response.error(res, 'Password minimal 4 karakter', 400);
-  }
-
   try {
     const user = await service.getUser(req.params.id);
     if (!user) return response.error(res, 'User tidak ditemukan', 404);
 
-    const hashedPassword = wpHash.HashPassword(password);
+    const newPassword = crypto.randomBytes(4).toString('hex');
+    const hashedPassword = wpHash.HashPassword(newPassword);
     await service.resetUserPassword(req.params.id, hashedPassword);
 
-    return response.success(res, { password }, 'Password user berhasil direset');
+    const subject = 'Password Akun Direset - Telegram Booster';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #dc3545;">Password Akun Direset</h2>
+        <p>Halo <strong>${user.nama}</strong>,</p>
+        <p>Password akun Anda telah direset oleh admin.</p>
+        <p>Password baru Anda: <strong style="font-size:18px;letter-spacing:1px;background:#f8f9fa;padding:4px 12px;border-radius:4px;">${newPassword}</strong></p>
+        <p style="color: #6c757d;">Silakan login dan segera ganti password Anda untuk keamanan akun.</p>
+        <p style="color: #6c757d; margin-top: 30px;">
+          Hormat kami,<br>
+          <strong>Tim Telegram Booster</strong>
+        </p>
+      </div>
+    `;
+
+    emailService.sendEmail(user.email, subject, html).catch(e => {
+      console.log('Failed to send reset password email:', e.message);
+    });
+
+    const waMessage = `Halo ${user.nama},
+Password akun Anda telah direset oleh admin.
+Password baru Anda: ${newPassword}
+Silakan login dan segera ganti password Anda.`;
+
+    waController.send_wa({ no_wa: user.no_wa, pesan: waMessage }).catch(e => {
+      console.log('Failed to send reset password WA:', e.message);
+    });
+
+    return response.success(res, null, 'Password berhasil direset & dikirim ke email dan WhatsApp user');
   } catch (e) {
     console.error('resetUserPassword error:', e);
     return response.serverError(res, 'Gagal mereset password user');
