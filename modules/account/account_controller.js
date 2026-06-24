@@ -173,7 +173,37 @@ const account = {
   },
 
   getCurrentUser: async (req, res) => {
-    return response.error(res, 'Session validation not implemented', 501);
+    const { email } = req.query;
+
+    if (!email) {
+      return response.error(res, 'Email diperlukan', 400);
+    }
+
+    try {
+      const [users] = await helper.db.execute(
+        'SELECT id, nama, email, no_wa, foto, role FROM account WHERE email = ? LIMIT 1',
+        [email]
+      );
+
+      if (users.length === 0) {
+        return response.notFound(res, 'User tidak ditemukan');
+      }
+
+      const user = users[0];
+      const userData = {
+        id: user.id,
+        name: user.nama,
+        email: user.email,
+        whatsapp: user.no_wa || null,
+        foto: user.foto || null,
+        role: user.role || 'user'
+      };
+
+      return response.success(res, userData);
+    } catch (error) {
+      console.error('Get profile error:', error);
+      return response.serverError(res, 'Gagal mengambil data profil');
+    }
   },
 
   activate: async (req, res) => {
@@ -400,7 +430,7 @@ const account = {
         [newNama, newEmail, newNoWa, account_id]
       );
 
-      return response.success(res, { nama: newNama, email: newEmail, no_wa: newNoWa }, 'Data akun berhasil diperbarui.');
+      return response.success(res, { name: newNama, email: newEmail, whatsapp: newNoWa }, 'Data akun berhasil diperbarui.');
     } catch (error) {
       console.error('Update profile error:', error);
       return response.serverError(res, 'Gagal memperbarui data akun');
