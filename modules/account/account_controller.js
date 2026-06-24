@@ -173,17 +173,23 @@ const account = {
   },
 
   getCurrentUser: async (req, res) => {
-    const { email } = req.query;
+    const { id, email } = req.query;
 
-    if (!email) {
-      return response.error(res, 'Email diperlukan', 400);
+    if (!id && !email) {
+      return response.error(res, 'id atau email diperlukan', 400);
     }
 
     try {
-      const [users] = await helper.db.execute(
-        'SELECT id, nama, email, no_wa, foto, role FROM account WHERE email = ? LIMIT 1',
-        [email]
-      );
+      let query, param;
+      if (id) {
+        query = 'SELECT id, nama, email, no_wa, foto, role FROM account WHERE id = ? LIMIT 1';
+        param = id;
+      } else {
+        query = 'SELECT id, nama, email, no_wa, foto, role FROM account WHERE email = ? LIMIT 1';
+        param = email;
+      }
+
+      const [users] = await helper.db.execute(query, [param]);
 
       if (users.length === 0) {
         return response.notFound(res, 'User tidak ditemukan');
