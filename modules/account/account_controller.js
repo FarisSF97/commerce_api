@@ -201,22 +201,41 @@ const account = {
   },
 
   changePassword: async (req, res) => {
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
-      return response.error(res, 'Email dan password diperlukan', 400);
+    const { email, current_password, password } = req.body;
+
+    if (!email || !current_password || !password) {
+      return response.error(res, 'Email, password saat ini, dan password baru diperlukan', 400);
     }
-    
+
     try {
+      const [users] = await helper.db.execute(
+        'SELECT password FROM account WHERE email = ?',
+        [email]
+      );
+
+      if (users.length === 0) {
+        return response.error(res, 'User tidak ditemukan', 404);
+      }
+
+      const isValidCurrent = wpHash.CheckPassword(current_password, users[0].password);
+      if (!isValidCurrent) {
+        return response.error(res, 'Password saat ini salah', 400);
+      }
+
+      const isSamePassword = wpHash.CheckPassword(password, users[0].password);
+      if (isSamePassword) {
+        return response.error(res, 'Password baru harus berbeda dari password saat ini', 400);
+      }
+
       const hashedPassword = wpHash.HashPassword(password);
-      
+
       await helper.db.execute(
         'UPDATE account SET password = ? WHERE email = ?',
         [hashedPassword, email]
       );
-      
+
       return response.success(res, null, 'Password berhasil diubah');
-      
+
     } catch (error) {
       console.error('Change password error:', error);
       return response.serverError(res, 'Gagal ubah password');
